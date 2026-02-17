@@ -1,10 +1,11 @@
 const express = require('express')
 const dotenv = require('dotenv')
 const cors = require('cors')
-const connectDB = require('./config/db')
 
-// Load env vars
+// Load env vars FIRST before anything else
 dotenv.config()
+
+const connectDB = require('./config/db')
 
 // Connect to database
 connectDB()
@@ -15,9 +16,22 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
+// Routes
+app.use('/api/auth', require('./routes/authRoutes'))
+
 // Test route
 app.get('/', (req, res) => {
   res.json({ message: 'CMS API is running...' })
+})
+
+// Error handler
+app.use((err, req, res, next) => {
+  const statusCode = res.statusCode === 200 ? 500 : res.statusCode
+  res.status(statusCode)
+  res.json({
+    message: err.message,
+    stack: process.env.NODE_ENV === 'production' ? null : err.stack
+  })
 })
 
 const PORT = process.env.PORT || 5000
