@@ -3,7 +3,9 @@ const router = express.Router()
 const {
   loginUser,
   getMe,
-  registerUser
+  registerUser,
+  getAllUsers,
+  toggleUserStatus
 } = require('../controllers/authController')
 const { protect, authorize } = require('../middleware/authMiddleware')
 
@@ -19,6 +21,22 @@ router.post(
   protect,
   authorize('superadmin', 'admin'),
   registerUser
+)
+
+// @route   GET /api/auth/users
+router.get(
+  '/users',
+  protect,
+  authorize('superadmin'),
+  getAllUsers
+)
+
+// @route   PUT /api/auth/users/:id/toggle
+router.put(
+  '/users/:id/toggle',
+  protect,
+  authorize('superadmin'),
+  toggleUserStatus
 )
 
 module.exports = router

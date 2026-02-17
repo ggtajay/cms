@@ -87,4 +87,38 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new Error('Invalid user data')
   }
 })
-module.exports = { loginUser, getMe, registerUser }
+
+// @desc    Get all users
+// @route   GET /api/auth/users
+// @access  Private (superadmin)
+const getAllUsers = asyncHandler(async (req, res) => {
+  const users = await User.find({}).select('-password').sort({ createdAt: -1 })
+  res.json(users)
+})
+
+// @desc    Toggle user active status
+// @route   PUT /api/auth/users/:id/toggle
+// @access  Private (superadmin)
+const toggleUserStatus = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.params.id)
+
+  if (!user) {
+    res.status(404)
+    throw new Error('User not found')
+  }
+
+  user.isActive = !user.isActive
+  await user.save()
+
+  res.json({
+    message: `User ${user.isActive ? 'activated' : 'deactivated'} successfully`,
+    isActive: user.isActive
+  })
+})
+module.exports = {
+  loginUser,
+  getMe,
+  registerUser,
+  getAllUsers,
+  toggleUserStatus
+}
