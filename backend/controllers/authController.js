@@ -53,5 +53,38 @@ const getMe = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user.id).select('-password')
   res.json(user)
 })
+// @desc    Create new user (admin, teacher, student etc.)
+// @route   POST /api/auth/register
+// @access  Private (superadmin, admin)
+const registerUser = asyncHandler(async (req, res) => {
+  const { name, email, password, role } = req.body
 
-module.exports = { loginUser, getMe }
+  // Check if user exists
+  const userExists = await User.findOne({ email })
+  if (userExists) {
+    res.status(400)
+    throw new Error('User already exists with this email')
+  }
+
+  // Create user
+  const user = await User.create({
+    name,
+    email,
+    password,
+    role
+  })
+
+  if (user) {
+    res.status(201).json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      message: `${role} account created successfully`
+    })
+  } else {
+    res.status(400)
+    throw new Error('Invalid user data')
+  }
+})
+module.exports = { loginUser, getMe, registerUser }
