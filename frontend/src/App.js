@@ -15,6 +15,8 @@ import MarkAttendance from './pages/teacher/MarkAttendance'
 import StudentAttendance from './pages/student/Attendance'
 import AddFaculty from './pages/admin/AddFaculty'
 import AllFaculty from './pages/admin/AllFaculty'
+import CollectFee from './pages/admin/CollectFee'
+import CreateFee from './pages/admin/CreateFee'
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -176,6 +178,26 @@ function App() {
       <AllFaculty />
    </ProtectedRoute>
   }
+  />
+
+  {/* Fee Collection Routes */}
+  <Route
+   path="/admin/fees/collect"
+   element={
+    <ProtectedRoute allowedRole="admin">
+      <CollectFee />
+    </ProtectedRoute>
+  }
+  />
+
+  {/* Create Fee Routes */}
+   <Route
+   path="/admin/fees/structure"
+   element={
+    <ProtectedRoute allowedRole="admin">
+      <CreateFee />
+    </ProtectedRoute>
+   }
   />
 
 {/* Default Route */}

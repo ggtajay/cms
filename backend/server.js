@@ -21,6 +21,7 @@ app.use('/api/auth', require('./routes/authRoutes'))
 app.use('/api/students', require('./routes/studentRoutes'))
 app.use('/api/attendance', require('./routes/attendanceRoutes'))
 app.use('/api/faculty', require('./routes/facultyRoutes'))
+app.use('/api/fees', require('./routes/feeRoutes'))
 
 // Test route
 app.get('/', (req, res) => {
