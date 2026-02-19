@@ -17,6 +17,9 @@ import AddFaculty from './pages/admin/AddFaculty'
 import AllFaculty from './pages/admin/AllFaculty'
 import CollectFee from './pages/admin/CollectFee'
 import CreateFee from './pages/admin/CreateFee'
+import FeeDueList from './pages/admin/FeeDueList'
+import FeeReports from './pages/admin/FeeReports'
+import FeeStatus from './pages/student/FeeStatus'
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -199,6 +202,32 @@ function App() {
     </ProtectedRoute>
    }
   />
+
+  {/* FEE Reports Route Next 3 */}
+  <Route
+   path="/admin/fees/due"
+   element={
+    <ProtectedRoute allowedRole="admin">
+      <FeeDueList />
+    </ProtectedRoute>
+  }
+ />
+ <Route
+   path="/admin/reports"
+   element={
+    <ProtectedRoute allowedRole="admin">
+      <FeeReports />
+    </ProtectedRoute>
+   }
+ />
+ <Route
+  path="/student/fees"
+  element={
+    <ProtectedRoute allowedRole="student">
+      <FeeStatus />
+    </ProtectedRoute>
+  }
+ />
 
 {/* Default Route */}
   <Route path="/" element={<Navigate to="/login" />} />
