@@ -23,6 +23,8 @@ import FeeStatus from './pages/student/FeeStatus'
 import CreateNotice from './pages/admin/CreateNotice'
 import Notices from './pages/admin/Notices'
 import ParentDashboard from './pages/parent/Dashboard'
+import ViewFaculty from './pages/admin/ViewFaculty'
+import EditFaculty from './pages/admin/EditFaculty'
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -283,6 +285,27 @@ function App() {
     </ProtectedRoute>
   }
 />
+
+{/* View Faculty Routes */}
+
+ <Route
+  path="/admin/faculty/view/:id"
+  element={
+    <ProtectedRoute allowedRole="admin">
+      <ViewFaculty />
+    </ProtectedRoute>
+  }
+ />
+
+ {/* Edit Faculty Routes */}
+  <Route
+   path="/admin/faculty/edit/:id"
+   element={
+    <ProtectedRoute allowedRole="admin">
+      <EditFaculty />
+    </ProtectedRoute>
+   }
+  />
 
 {/* Default Route */}
   <Route path="/" element={<Navigate to="/login" />} />
