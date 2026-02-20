@@ -20,6 +20,8 @@ import CreateFee from './pages/admin/CreateFee'
 import FeeDueList from './pages/admin/FeeDueList'
 import FeeReports from './pages/admin/FeeReports'
 import FeeStatus from './pages/student/FeeStatus'
+import CreateNotice from './pages/admin/CreateNotice'
+import Notices from './pages/admin/Notices'
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -228,6 +230,48 @@ function App() {
     </ProtectedRoute>
   }
  />
+
+ {/* Create Notice Routes */}
+ <Route
+  path="/admin/notices"
+  element={
+    <ProtectedRoute allowedRole="admin">
+      <Notices />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/admin/notices/create"
+  element={
+    <ProtectedRoute allowedRole="admin">
+      <CreateNotice />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/superadmin/notices"
+  element={
+    <ProtectedRoute allowedRole="superadmin">
+      <Notices />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/teacher/notices"
+  element={
+    <ProtectedRoute allowedRole="teacher">
+      <Notices />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/student/notices"
+  element={
+    <ProtectedRoute allowedRole="student">
+      <Notices />
+    </ProtectedRoute>
+  }
+/>
 
 {/* Default Route */}
   <Route path="/" element={<Navigate to="/login" />} />
