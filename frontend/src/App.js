@@ -22,6 +22,7 @@ import FeeReports from './pages/admin/FeeReports'
 import FeeStatus from './pages/student/FeeStatus'
 import CreateNotice from './pages/admin/CreateNotice'
 import Notices from './pages/admin/Notices'
+import ParentDashboard from './pages/parent/Dashboard'
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -269,6 +270,16 @@ function App() {
   element={
     <ProtectedRoute allowedRole="student">
       <Notices />
+    </ProtectedRoute>
+  }
+/>
+
+{/* Parent Page Dashboard */}
+ <Route
+  path="/parent/dashboard"
+  element={
+    <ProtectedRoute allowedRole="parent">
+      <ParentDashboard />
     </ProtectedRoute>
   }
 />
