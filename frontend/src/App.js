@@ -28,6 +28,7 @@ import EditFaculty from './pages/admin/EditFaculty'
 import TeacherProfile from './pages/teacher/MyProfile'
 import TransportManagement from './pages/admin/TransportManagement'
 import HostelManagement from './pages/admin/HostelManagement'
+import AttendanceHistory from './pages/teacher/AttendanceHistory'
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -338,6 +339,16 @@ function App() {
    element={
     <ProtectedRoute allowedRole="admin">
       <HostelManagement />
+    </ProtectedRoute>
+   }
+  />
+
+  {/* Attendance History Routes */}
+  <Route
+   path="/teacher/attendance/history"
+   element={
+    <ProtectedRoute allowedRole="teacher">
+      <AttendanceHistory />
     </ProtectedRoute>
    }
   />
