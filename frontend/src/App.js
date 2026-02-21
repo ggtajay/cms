@@ -25,6 +25,9 @@ import Notices from './pages/admin/Notices'
 import ParentDashboard from './pages/parent/Dashboard'
 import ViewFaculty from './pages/admin/ViewFaculty'
 import EditFaculty from './pages/admin/EditFaculty'
+import TeacherProfile from './pages/teacher/MyProfile'
+import TransportManagement from './pages/admin/TransportManagement'
+import HostelManagement from './pages/admin/HostelManagement'
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -303,6 +306,38 @@ function App() {
    element={
     <ProtectedRoute allowedRole="admin">
       <EditFaculty />
+    </ProtectedRoute>
+   }
+  />
+
+  {/* View Faculty Routes */}
+  <Route
+   path="/teacher/profile"
+   element={
+    <ProtectedRoute allowedRole="teacher">
+      <TeacherProfile />
+    </ProtectedRoute>
+   }
+  />
+
+  {/* Transport Routes */}
+
+  <Route
+  path="/admin/transport"
+  element={
+    <ProtectedRoute allowedRole="admin">
+      <TransportManagement />
+    </ProtectedRoute>
+   }
+  />
+
+  {/* Hotel Management Routes */}
+
+  <Route
+   path="/admin/hostel"
+   element={
+    <ProtectedRoute allowedRole="admin">
+      <HostelManagement />
     </ProtectedRoute>
    }
   />
