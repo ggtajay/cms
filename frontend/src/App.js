@@ -29,6 +29,12 @@ import TeacherProfile from './pages/teacher/MyProfile'
 import TransportManagement from './pages/admin/TransportManagement'
 import HostelManagement from './pages/admin/HostelManagement'
 import AttendanceHistory from './pages/teacher/AttendanceHistory'
+import TeacherAssignments from './pages/teacher/Assignments'
+import CreateAssignment from './pages/teacher/CreateAssignment'
+import MyAssignments from './pages/student/MyAssignments'
+import ViewAssignment from './pages/teacher/ViewAssignment'
+import EnterMarks from './pages/teacher/EnterMarks'
+import MyClasses from './pages/teacher/MyClasses'
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -75,289 +81,347 @@ function App() {
         <Route
           path="/superadmin/users"
           element={
-          <ProtectedRoute allowedRole="superadmin">
-          <AllUsers />
-        </ProtectedRoute>
-        }
+            <ProtectedRoute allowedRole="superadmin">
+              <AllUsers />
+            </ProtectedRoute>
+          }
         />
 
         {/* Admin Routes */}
         <Route
           path="/admin/dashboard"
           element={
-          <ProtectedRoute allowedRole="admin">
-          <AdminDashboard />
-          </ProtectedRoute>
-         }
+            <ProtectedRoute allowedRole="admin">
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
         />
 
         {/* Add Student Routes */}
         <Route
-         path="/admin/students/add"
-         element={
-         <ProtectedRoute allowedRole="admin">
-        <AddStudent />
-        </ProtectedRoute>
+          path="/admin/students/add"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <AddStudent />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Student Dashboard Page Routes */}
+        <Route
+          path="/student/dashboard"
+          element={
+            <ProtectedRoute allowedRole="student">
+              <StudentDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Student Assignments Route */}
+        <Route
+          path="/student/assignments"
+          element={
+            <ProtectedRoute allowedRole="student">
+              <MyAssignments />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* All student Routes */}
+        <Route
+          path="/admin/students"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <AllStudents />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* View Student Routes */}
+
+        <Route
+          path="/admin/students/view/:id"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <ViewStudent />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Edit Student Page Routes */}
+        <Route
+          path="/admin/students/edit/:id"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <EditStudent />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Teacher Dashboard Routes */}
+        <Route
+          path="/teacher/dashboard"
+          element={
+            <ProtectedRoute allowedRole="teacher">
+              <TeacherDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Teacher Assignments Routes */}
+        <Route
+          path="/teacher/assignments"
+          element={
+            <ProtectedRoute allowedRole="teacher">
+              <TeacherAssignments />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teacher/assignments/create"
+          element={
+            <ProtectedRoute allowedRole="teacher">
+              <CreateAssignment />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Teacher Attendance Routes */}
+        <Route
+          path="/teacher/attendance/mark"
+          element={
+            <ProtectedRoute allowedRole="teacher">
+              <MarkAttendance />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Student Attendance Routes */}
+        <Route
+          path="/student/attendance"
+          element={
+            <ProtectedRoute allowedRole="student">
+              <StudentAttendance />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Adding Faculty Routes */}
+        <Route
+          path="/admin/faculty/add"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <AddFaculty />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* All Faculty Routes */}
+        <Route
+          path="/admin/faculty"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <AllFaculty />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Fee Collection Routes */}
+        <Route
+          path="/admin/fees/collect"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <CollectFee />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Create Fee Routes */}
+        <Route
+          path="/admin/fees/structure"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <CreateFee />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* FEE Reports Route Next 3 */}
+        <Route
+          path="/admin/fees/due"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <FeeDueList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/reports"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <FeeReports />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/fees"
+          element={
+            <ProtectedRoute allowedRole="student">
+              <FeeStatus />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Create Notice Routes */}
+        <Route
+          path="/admin/notices"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <Notices />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/notices/create"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <CreateNotice />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/superadmin/notices"
+          element={
+            <ProtectedRoute allowedRole="superadmin">
+              <Notices />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teacher/notices"
+          element={
+            <ProtectedRoute allowedRole="teacher">
+              <Notices />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/notices"
+          element={
+            <ProtectedRoute allowedRole="student">
+              <Notices />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Parent Page Dashboard */}
+        <Route
+          path="/parent/dashboard"
+          element={
+            <ProtectedRoute allowedRole="parent">
+              <ParentDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* View Faculty Routes */}
+
+        <Route
+          path="/admin/faculty/view/:id"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <ViewFaculty />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Edit Faculty Routes */}
+        <Route
+          path="/admin/faculty/edit/:id"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <EditFaculty />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* View Faculty Routes */}
+        <Route
+          path="/teacher/profile"
+          element={
+            <ProtectedRoute allowedRole="teacher">
+              <TeacherProfile />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Transport Routes */}
+
+        <Route
+          path="/admin/transport"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <TransportManagement />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Hotel Management Routes */}
+
+        <Route
+          path="/admin/hostel"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <HostelManagement />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Attendance History Routes */}
+        <Route
+          path="/teacher/attendance/history"
+          element={
+            <ProtectedRoute allowedRole="teacher">
+              <AttendanceHistory />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* view Assignment Routes */}
+        <Route
+          path="/teacher/assignments/view/:id"
+          element={
+            <ProtectedRoute allowedRole="teacher">
+              <ViewAssignment />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+        path="/teacher/marks"
+        element={
+         <ProtectedRoute allowedRole="teacher">
+        <EnterMarks />
+       </ProtectedRoute>
        }
-       />
-
-       {/* Student Dashboard Page Routes */}
-       <Route
-       path="/student/dashboard"
-       element={
-      <ProtectedRoute allowedRole="student">
-      <StudentDashboard />
-      </ProtectedRoute>
-     }
-     />
-
-     {/* All student Routes */}
-     <Route
-     path="/admin/students"
-     element={
-     <ProtectedRoute allowedRole="admin">
-      <AllStudents />
+        />
+        
+        {/* My Classes Routes */}
+         <Route
+        path="/teacher/classes"
+         element={
+        <ProtectedRoute allowedRole="teacher">
+        <MyClasses />
      </ProtectedRoute>
-     }
-     />
-     
-     {/* View Student Routes */}
+      }
+      />
 
-     <Route
-     path="/admin/students/view/:id"
-     element={
-     <ProtectedRoute allowedRole="admin">
-       <ViewStudent />
-     </ProtectedRoute>
-     }
-     />
 
-     {/* Edit Student Page Routes */}
-     <Route
-     path="/admin/students/edit/:id"
-     element={
-     <ProtectedRoute allowedRole="admin">
-      <EditStudent />
-     </ProtectedRoute>
-     }
-    />
 
-    {/* Teacher Dashboard Routes */}
-    <Route
-    path="/teacher/dashboard"
-    element={
-     <ProtectedRoute allowedRole="teacher">
-      <TeacherDashboard />
-    </ProtectedRoute>
-    }
-    />
-
-   {/* Teacher Attendance Routes */}
-   <Route
-   path="/teacher/attendance/mark"
-   element={
-    <ProtectedRoute allowedRole="teacher">
-      <MarkAttendance />
-    </ProtectedRoute>
-   }
-   />
-
-   {/* Student Attendance Routes */}
-   <Route
-   path="/student/attendance"
-   element={
-    <ProtectedRoute allowedRole="student">
-      <StudentAttendance />
-    </ProtectedRoute>
-   }
-  />
-  
-  {/* Adding Faculty Routes */}
-  <Route
-   path="/admin/faculty/add"
-   element={
-    <ProtectedRoute allowedRole="admin">
-      <AddFaculty />
-    </ProtectedRoute>
-   }
-  />
-
-  {/* All Faculty Routes */}
-  <Route
-   path="/admin/faculty"
-   element={
-    <ProtectedRoute allowedRole="admin">
-      <AllFaculty />
-   </ProtectedRoute>
-  }
-  />
-
-  {/* Fee Collection Routes */}
-  <Route
-   path="/admin/fees/collect"
-   element={
-    <ProtectedRoute allowedRole="admin">
-      <CollectFee />
-    </ProtectedRoute>
-  }
-  />
-
-  {/* Create Fee Routes */}
-   <Route
-   path="/admin/fees/structure"
-   element={
-    <ProtectedRoute allowedRole="admin">
-      <CreateFee />
-    </ProtectedRoute>
-   }
-  />
-
-  {/* FEE Reports Route Next 3 */}
-  <Route
-   path="/admin/fees/due"
-   element={
-    <ProtectedRoute allowedRole="admin">
-      <FeeDueList />
-    </ProtectedRoute>
-  }
- />
- <Route
-   path="/admin/reports"
-   element={
-    <ProtectedRoute allowedRole="admin">
-      <FeeReports />
-    </ProtectedRoute>
-   }
- />
- <Route
-  path="/student/fees"
-  element={
-    <ProtectedRoute allowedRole="student">
-      <FeeStatus />
-    </ProtectedRoute>
-  }
- />
-
- {/* Create Notice Routes */}
- <Route
-  path="/admin/notices"
-  element={
-    <ProtectedRoute allowedRole="admin">
-      <Notices />
-    </ProtectedRoute>
-  }
-/>
-<Route
-  path="/admin/notices/create"
-  element={
-    <ProtectedRoute allowedRole="admin">
-      <CreateNotice />
-    </ProtectedRoute>
-  }
-/>
-<Route
-  path="/superadmin/notices"
-  element={
-    <ProtectedRoute allowedRole="superadmin">
-      <Notices />
-    </ProtectedRoute>
-  }
-/>
-<Route
-  path="/teacher/notices"
-  element={
-    <ProtectedRoute allowedRole="teacher">
-      <Notices />
-    </ProtectedRoute>
-  }
-/>
-<Route
-  path="/student/notices"
-  element={
-    <ProtectedRoute allowedRole="student">
-      <Notices />
-    </ProtectedRoute>
-  }
-/>
-
-{/* Parent Page Dashboard */}
- <Route
-  path="/parent/dashboard"
-  element={
-    <ProtectedRoute allowedRole="parent">
-      <ParentDashboard />
-    </ProtectedRoute>
-  }
-/>
-
-{/* View Faculty Routes */}
-
- <Route
-  path="/admin/faculty/view/:id"
-  element={
-    <ProtectedRoute allowedRole="admin">
-      <ViewFaculty />
-    </ProtectedRoute>
-  }
- />
-
- {/* Edit Faculty Routes */}
-  <Route
-   path="/admin/faculty/edit/:id"
-   element={
-    <ProtectedRoute allowedRole="admin">
-      <EditFaculty />
-    </ProtectedRoute>
-   }
-  />
-
-  {/* View Faculty Routes */}
-  <Route
-   path="/teacher/profile"
-   element={
-    <ProtectedRoute allowedRole="teacher">
-      <TeacherProfile />
-    </ProtectedRoute>
-   }
-  />
-
-  {/* Transport Routes */}
-
-  <Route
-  path="/admin/transport"
-  element={
-    <ProtectedRoute allowedRole="admin">
-      <TransportManagement />
-    </ProtectedRoute>
-   }
-  />
-
-  {/* Hotel Management Routes */}
-
-  <Route
-   path="/admin/hostel"
-   element={
-    <ProtectedRoute allowedRole="admin">
-      <HostelManagement />
-    </ProtectedRoute>
-   }
-  />
-
-  {/* Attendance History Routes */}
-  <Route
-   path="/teacher/attendance/history"
-   element={
-    <ProtectedRoute allowedRole="teacher">
-      <AttendanceHistory />
-    </ProtectedRoute>
-   }
-  />
-
-{/* Default Route */}
-  <Route path="/" element={<Navigate to="/login" />} />
-  <Route path="*" element={<Navigate to="/login" />} />
-  </Routes>
-  </Router>
+        {/* Default Route */}
+        <Route path="/" element={<Navigate to="/login" />} />
+        <Route path="*" element={<Navigate to="/login" />} />
+      </Routes>
+    </Router>
   )
 }
 

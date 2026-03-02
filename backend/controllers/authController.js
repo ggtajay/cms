@@ -111,7 +111,7 @@ const toggleUserStatus = asyncHandler(async (req, res) => {
   await user.save()
 
   res.json({
-    message: `User ${user.isActive ? 'activated' : 'deactivated'} successfully`,
+    message: `User ${user.isActive ? 'activated' : 'deactivated'} successfully.`,
     isActive: user.isActive
   })
 })
