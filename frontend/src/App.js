@@ -1,5 +1,6 @@
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import LandingPage from './pages/LandingPage'
 import Login from './pages/auth/Login'
 import SuperAdminDashboard from './pages/superadmin/Dashboard'
 import CreateAdmin from './pages/superadmin/CreateAdmin'
@@ -35,6 +36,10 @@ import MyAssignments from './pages/student/MyAssignments'
 import ViewAssignment from './pages/teacher/ViewAssignment'
 import EnterMarks from './pages/teacher/EnterMarks'
 import MyClasses from './pages/teacher/MyClasses'
+
+//landing page routes
+
+
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -418,8 +423,8 @@ function App() {
 
 
         {/* Default Route */}
-        <Route path="/" element={<Navigate to="/login" />} />
-        <Route path="*" element={<Navigate to="/login" />} />
+        <Route path="/" element={<LandingPage />} />
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
   )
