@@ -42,7 +42,7 @@ const sendSMS = async (phone, message) => {
         'cache-control': 'no-cache',
       },
       body: JSON.stringify({
-        route: 'q',          // 'q' = Quick (Transactional) route
+        route: 'q',          // 'q' = Quick route (requires DLT for OTP messages)
         message,
         language: 'english',
         flash: 0,
@@ -71,8 +71,49 @@ const sendSMS = async (phone, message) => {
  * @param {string} otp   - 6-digit OTP code
  */
 const sendOtpSms = async (phone, otp) => {
-  const message = `Your CMS verification OTP is ${otp}. It expires in 5 minutes. Do not share it with anyone. - College Management System`
-  return sendSMS(phone, message)
+  // Sanitize phone
+  const cleanPhone = String(phone || '').replace(/^\+?91|^0/, '').trim()
+
+  if (!cleanPhone || cleanPhone.length < 10) {
+    console.warn('[SMS] Invalid or missing phone number for OTP — skipped')
+    return false
+  }
+
+  if (!process.env.FAST2SMS_API_KEY) {
+    console.log(`\n[SMS DEV] OTP for ${cleanPhone}: ${otp}\n`)
+    return true
+  }
+
+  try {
+    // Use the 'otp' route — specifically designed for OTPs, no DLT required
+    const response = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+      method: 'POST',
+      headers: {
+        authorization: process.env.FAST2SMS_API_KEY,
+        'Content-Type': 'application/json',
+        'cache-control': 'no-cache',
+      },
+      body: JSON.stringify({
+        route: 'otp',
+        variables_values: otp,
+        flash: 0,
+        numbers: cleanPhone,
+      }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok || !data.return) {
+      console.error('[SMS] Fast2SMS OTP route failed:', JSON.stringify(data.message || data))
+      return false
+    }
+
+    console.log(`[SMS] OTP sent to ${cleanPhone} — RequestId: ${data.request_id || 'N/A'}`)
+    return true
+  } catch (err) {
+    console.error(`[SMS] Network/API error while sending OTP to ${cleanPhone}:`, err.message)
+    return false
+  }
 }
 
 module.exports = { sendSMS, sendOtpSms }
