@@ -110,11 +110,20 @@ const sendMobileOtp = asyncHandler(async (req, res) => {
 
   const result = await sendOtpSms(session.mobile, otp)
   if (!result) {
-    res.status(500)
-    throw new Error('Failed to send OTP SMS')
+    // SMS failed — fall back to sending the OTP via email so user is not blocked
+    console.warn('[OTP] SMS failed, falling back to email OTP delivery')
+    const emailResult = await sendOtpEmail({ to: session.email, otp })
+    if (!emailResult.success) {
+      res.status(500)
+      throw new Error('Failed to send OTP via both SMS and email')
+    }
+    return res.json({
+      message: 'Mobile OTP sent to your registered email (SMS unavailable)',
+      deliveredVia: 'email',
+    })
   }
 
-  res.json({ message: 'Mobile OTP sent successfully' })
+  res.json({ message: 'Mobile OTP sent successfully', deliveredVia: 'sms' })
 })
 
 // @desc    Verify Mobile OTP
