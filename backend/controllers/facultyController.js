@@ -7,7 +7,7 @@ const { sendCredentials } = require('../utils/mailer')
 const { sendSMS } = require('../utils/sms')
 
 const getProfileImagePath = (file) =>
-  file ? `/uploads/profiles/${file.filename}` : ''
+  file ? file.path : ''
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const normalizeSubjects = (subjects) => {
@@ -243,7 +243,7 @@ const uploadFacultyDocuments = asyncHandler(async (req, res) => {
   const docFields = ['photo', 'degreeCertificate', 'idProof', 'experienceLetter']
   docFields.forEach((field) => {
     if (files[field]?.[0]) {
-      updates[`documents.${field}`] = `/uploads/documents/${files[field][0].filename}`
+      updates[`documents.${field}`] = files[field][0].path
     }
   })
 

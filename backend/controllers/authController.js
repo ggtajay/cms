@@ -12,7 +12,7 @@ const generateToken = (id, role) => {
 }
 
 const getProfileImagePath = (file) => {
-  return file ? `/uploads/profiles/${file.filename}` : ''
+  return file ? file.path : ''
 }
 
 const getProfileForUser = async (user) => {

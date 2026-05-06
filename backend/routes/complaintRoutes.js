@@ -16,35 +16,19 @@ const {
 } = require('../controllers/complaintController')
 
 // ── Upload config for complaint attachments ───────────────────────────────────
-const uploadsDir = path.join(__dirname, '..', 'uploads', 'complaints')
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true })
-}
+const { CloudinaryStorage } = require('multer-storage-cloudinary')
+const { cloudinary } = require('../config/cloudinary')
 
-const storage = multer.diskStorage({
-  destination(req, file, cb) {
-    cb(null, uploadsDir)
-  },
-  filename(req, file, cb) {
-    const ext = path.extname(file.originalname)
-    cb(null, `complaint-${Date.now()}-${Math.round(Math.random() * 1e6)}${ext}`)
-  },
-})
-
-const fileFilter = (req, file, cb) => {
-  const allowed = /jpeg|jpg|png|gif|pdf|doc|docx|txt/
-  const extName = allowed.test(path.extname(file.originalname).toLowerCase())
-  const mimeType = allowed.test(file.mimetype)
-  if (extName || mimeType) {
-    cb(null, true)
-  } else {
-    cb(new Error('Only images, PDFs, and documents are allowed'))
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'cms/complaints',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'pdf']
   }
-}
+})
 
 const upload = multer({
   storage,
-  fileFilter,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB per file
 })
 
@@ -84,7 +68,7 @@ router.post(
   authorize('student', 'teacher'),
   upload.array('attachments', 5),
   (req, res) => {
-    const urls = (req.files || []).map((f) => `/uploads/complaints/${f.filename}`)
+    const urls = (req.files || []).map((f) => f.path)
     res.json({ urls })
   }
 )

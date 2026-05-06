@@ -90,7 +90,7 @@ const createComplaint = asyncHandler(async (req, res) => {
 
   // ── Handle uploaded attachments ───────────────────────────────────────────
   const attachments = (req.files || []).map(
-    (f) => `/uploads/complaints/${f.filename}`
+    (f) => f.path
   )
 
   const complaint = await Complaint.create({

@@ -12,23 +12,15 @@ const {
   createWalkInApplication,
 } = require('../controllers/applicationController')
 const multer = require('multer')
-const path = require('path')
-const fs = require('fs')
+const { CloudinaryStorage } = require('multer-storage-cloudinary')
+const { cloudinary } = require('../config/cloudinary')
 
-// Ensure upload directory exists
-const documentsDir = path.join(__dirname, '..', 'uploads', 'documents')
-if (!fs.existsSync(documentsDir)) {
-  fs.mkdirSync(documentsDir, { recursive: true })
-}
-
-// Storage config for documents
-const storage = multer.diskStorage({
-  destination(req, file, cb) {
-    cb(null, documentsDir)
-  },
-  filename(req, file, cb) {
-    cb(null, `app-${Date.now()}${path.extname(file.originalname)}`)
-  },
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'cms/applications',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'pdf']
+  }
 })
 const upload = multer({ storage })
 

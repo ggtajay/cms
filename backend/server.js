@@ -99,7 +99,7 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000
 
-app.listen(PORT, async () => {
+const startServer = async () => {
   console.log(`Server running on port ${PORT}`)
 
   // ── Email SMTP Health Check ─────────────────────────────────────────────────
@@ -146,4 +146,10 @@ app.listen(PORT, async () => {
   // Run once at startup, then every hour
   escalateComplaintsJob()
   setInterval(escalateComplaintsJob, 60 * 60 * 1000)
-})
+}
+
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, startServer)
+}
+
+module.exports = app

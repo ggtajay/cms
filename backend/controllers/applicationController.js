@@ -10,8 +10,8 @@ const { generateAppId, generateStudentId } = require('../utils/idGenerator')
 const { sendCredentials } = require('../utils/mailer')
 const { sendSMS } = require('../utils/sms')
 
-const getProfileImagePath = (file) => (file ? `/uploads/profiles/${file.filename}` : '')
-const getDocPath = (file) => (file ? `/uploads/documents/${file.filename}` : '')
+const getProfileImagePath = (file) => (file ? file.path : '')
+const getDocPath = (file) => (file ? file.path : '')
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
