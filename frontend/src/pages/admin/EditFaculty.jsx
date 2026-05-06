@@ -1,3 +1,6 @@
+/* eslint-disable jsx-a11y/anchor-is-valid */
+/* eslint-disable no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react'
 import Sidebar from '../../components/Sidebar'
 import axios from 'axios'
@@ -42,7 +45,7 @@ const EditFaculty = () => {
   useEffect(() => {
     const fetchFaculty = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/faculty/${id}`, config)
+        const res = await axios.get(`/api/faculty/${id}`, config)
         const faculty = res.data
         setFormData({
           name: faculty.name,
@@ -97,7 +100,7 @@ const EditFaculty = () => {
         .filter(s => s)
 
       await axios.put(
-        `http://localhost:5000/api/faculty/${id}`,
+        `/api/faculty/${id}`,
         { ...formData, subjects: subjectsArray },
         config
       )

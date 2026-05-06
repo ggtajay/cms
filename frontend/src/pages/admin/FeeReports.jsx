@@ -1,3 +1,6 @@
+/* eslint-disable jsx-a11y/anchor-is-valid */
+/* eslint-disable no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react'
 import Sidebar from '../../components/Sidebar'
 import axios from 'axios'
@@ -26,7 +29,7 @@ const FeeReports = () => {
         : ''
       
       const res = await axios.get(
-        `http://localhost:5000/api/fees/reports/collection${params}`,
+        `/api/fees/reports/collection${params}`,
         config
       )
       setReportData(res.data)

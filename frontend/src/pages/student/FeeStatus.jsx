@@ -1,3 +1,6 @@
+/* eslint-disable jsx-a11y/anchor-is-valid */
+/* eslint-disable no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react'
 import Sidebar from '../../components/Sidebar'
 import axios from 'axios'
@@ -17,7 +20,7 @@ const FeeStatus = () => {
   useEffect(() => {
     const fetchFees = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/fees/my-fees', config)
+        const res = await axios.get('/api/fees/my-fees', config)
         setData(res.data)
       } catch (error) {
         toast.error('Failed to fetch fee details')

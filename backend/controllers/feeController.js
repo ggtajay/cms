@@ -67,14 +67,14 @@ const collectFee = asyncHandler(async (req, res) => {
 
   await fee.save()
 
-  // Update student fee status
-  const student = await Student.findById(fee.student._id)
+  // Update student fee status using the already-populated student document
+  const student = fee.student
   if (fee.status === 'paid') {
     student.feeStatus = 'paid'
   } else if (fee.status === 'partial') {
     student.feeStatus = 'partial'
   }
-  await student.save()
+  await student.save({ validateBeforeSave: false })
 
   res.json({
     message: 'Payment collected successfully',

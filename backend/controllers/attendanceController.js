@@ -71,7 +71,7 @@ const getAttendance = asyncHandler(async (req, res) => {
   if (date) filter.date = new Date(date)
   if (subject) filter.subject = subject
   if (course) filter.course = course
-  if (semester) filter.semester = semester
+  if (semester) filter.semester = parseInt(semester, 10)
   if (section) filter.section = section
   if (studentId) filter.student = studentId
 

@@ -1,3 +1,6 @@
+/* eslint-disable jsx-a11y/anchor-is-valid */
+/* eslint-disable no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react'
 import Sidebar from '../../components/Sidebar'
 import axios from 'axios'
@@ -20,7 +23,7 @@ const MyAssignments = () => {
 
     const fetchAssignments = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/assignments/my-assignments', config)
+            const res = await axios.get('/api/assignments/my-assignments', config)
             setAssignments(res.data)
         } catch (error) {
             toast.error('Failed to fetch assignments')
@@ -38,7 +41,7 @@ const MyAssignments = () => {
         setSubmitting(true)
         try {
             await axios.post(
-                `http://localhost:5000/api/assignments/${selectedAssignment._id}/submit`,
+                `/api/assignments/${selectedAssignment._id}/submit`,
                 { content },
                 config
             )

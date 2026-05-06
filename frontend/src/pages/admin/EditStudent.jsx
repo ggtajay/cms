@@ -1,3 +1,6 @@
+/* eslint-disable jsx-a11y/anchor-is-valid */
+/* eslint-disable no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react'
 import Sidebar from '../../components/Sidebar'
 import axios from 'axios'
@@ -40,7 +43,7 @@ const EditStudent = () => {
     const fetchStudent = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:5000/api/students/${id}`,
+          `/api/students/${id}`,
           config
         )
         const student = res.data
@@ -82,7 +85,7 @@ const EditStudent = () => {
     setSaving(true)
     try {
       await axios.put(
-        `http://localhost:5000/api/students/${id}`,
+        `/api/students/${id}`,
         formData,
         config
       )

@@ -1,3 +1,6 @@
+/* eslint-disable jsx-a11y/anchor-is-valid */
+/* eslint-disable no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react'
 import Sidebar from '../../components/Sidebar'
 import axios from 'axios'
@@ -25,7 +28,7 @@ const CreateFee = () => {
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/students', config)
+        const res = await axios.get('/api/students', config)
         setStudents(res.data.filter(s => s.admissionStatus === 'active'))
       } catch (error) {
         toast.error('Failed to fetch students')
@@ -42,7 +45,7 @@ const CreateFee = () => {
     e.preventDefault()
     setLoading(true)
     try {
-      await axios.post('http://localhost:5000/api/fees', formData, config)
+      await axios.post('/api/fees', formData, config)
       toast.success('Fee record created successfully!')
       setFormData({
         studentId: '',

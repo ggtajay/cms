@@ -76,7 +76,7 @@ const getMyAssignments = asyncHandler(async (req, res) => {
   }
 
   const assignments = await Assignment.find({
-    course: student.course,
+    course: student.course.toString(),
     semester: student.semester,
     section: student.section,
     isActive: true

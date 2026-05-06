@@ -1,108 +1,92 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
+import { useNavigate } from 'react-router-dom'
+import { MdCalendarToday, MdGrade, MdAttachMoney, MdPeople, MdArrowForward, MdNotifications } from 'react-icons/md'
 import Sidebar from '../../components/Sidebar'
-import axios from 'axios'
-import { MdPeople, MdCalendarToday, MdGrade, MdAttachMoney } from 'react-icons/md'
+import Topbar from '../../components/Topbar'
 
 const ParentDashboard = () => {
-  const [studentData, setStudentData] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
   const user = JSON.parse(localStorage.getItem('user'))
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 
-  // For now, we'll hardcode a student ID - in production this would come from parent-student linking
-  const studentId = 'STUDENT_ID_HERE' // This should be linked in the parent's profile
-
-  useEffect(() => {
-    // Fetch child's basic info
-    // In production, fetch parent's linked children from backend
-    setLoading(false)
-  }, [])
+  const getGreeting = () => {
+    const h = new Date().getHours()
+    return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'
+  }
 
   const stats = [
-    {
-      title: "Child's Attendance",
-      value: 'N/A',
-      color: 'text-blue-600',
-      bg: 'bg-blue-50',
-      icon: <MdCalendarToday size={28} className="text-blue-600" />
-    },
-    {
-      title: 'Overall Grade',
-      value: 'N/A',
-      color: 'text-green-600',
-      bg: 'bg-green-50',
-      icon: <MdGrade size={28} className="text-green-600" />
-    },
-    {
-      title: 'Fee Status',
-      value: 'Pending',
-      color: 'text-orange-600',
-      bg: 'bg-orange-50',
-      icon: <MdAttachMoney size={28} className="text-orange-600" />
-    }
+    { label: "Child's Attendance", value: '—',  sub: 'This semester',  icon: <MdCalendarToday size={22} className="text-white" />, gradient: 'linear-gradient(135deg,#4f46e5,#6366f1)', path: '/parent/attendance' },
+    { label: 'Latest Result',      value: '—',  sub: 'Academic grade', icon: <MdGrade size={22} className="text-white" />,         gradient: 'linear-gradient(135deg,#059669,#10b981)', path: '/parent/results' },
+    { label: 'Fee Status',         value: '—',  sub: 'Current dues',   icon: <MdAttachMoney size={22} className="text-white" />,   gradient: 'linear-gradient(135deg,#d97706,#f59e0b)', path: '/parent/fees' },
+    { label: 'Notices',            value: '—',  sub: 'Unread',         icon: <MdNotifications size={22} className="text-white" />, gradient: 'linear-gradient(135deg,#7c3aed,#a855f7)', path: '/parent/notices' },
+  ]
+
+  const quickLinks = [
+    { label: "Child's Profile", icon: <MdPeople size={20} />,         path: '/parent/profile',    gradient: 'linear-gradient(135deg,#4f46e5,#6366f1)' },
+    { label: 'Attendance',      icon: <MdCalendarToday size={20} />,  path: '/parent/attendance', gradient: 'linear-gradient(135deg,#0369a1,#38bdf8)' },
+    { label: 'Results',         icon: <MdGrade size={20} />,          path: '/parent/results',    gradient: 'linear-gradient(135deg,#059669,#10b981)' },
+    { label: 'Fee Status',      icon: <MdAttachMoney size={20} />,    path: '/parent/fees',       gradient: 'linear-gradient(135deg,#d97706,#f59e0b)' },
   ]
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="cms-layout">
       <Sidebar />
+      <div className="cms-main">
+        <Topbar title="Parent Dashboard" subtitle={today} />
 
-      <div className="flex-1 flex flex-col">
-        <div className="bg-white shadow px-6 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold text-gray-800">Parent Dashboard</h1>
-          <div className="flex items-center gap-3">
-            <div className="bg-blue-600 w-9 h-9 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold">{user?.name?.charAt(0)}</span>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-800">{user?.name}</p>
-              <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
+        <main className="cms-content">
+          <div className="cms-welcome-banner animate-fade-in">
+            <div className="relative z-10">
+              <p className="text-indigo-300 text-sm font-medium mb-1">{getGreeting()}, {user?.name?.split(' ')[0]} 👋</p>
+              <h2 className="text-2xl font-bold text-white mb-1">Parent Portal</h2>
+              <p className="text-indigo-200 text-sm">Stay updated on your child's academic progress.</p>
             </div>
           </div>
-        </div>
 
-        <div className="p-6">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">
-              Welcome, {user?.name}! 👋
-            </h2>
-            <p className="text-gray-500 mt-1">
-              Track your child's academic progress
-            </p>
-          </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {stats.map((stat) => (
-              <div
-                key={stat.title}
-                className="bg-white rounded-xl p-6 shadow-sm flex items-center gap-4"
-              >
-                <div className={`${stat.bg} p-3 rounded-xl`}>
-                  {stat.icon}
-                </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in">
+            {stats.map(s => (
+              <div key={s.label} className="cms-card p-5 flex items-center gap-4 cursor-pointer hover:-translate-y-0.5" onClick={() => navigate(s.path)}>
+                <div className="cms-stat-icon flex-shrink-0" style={{ background: s.gradient }}>{s.icon}</div>
                 <div>
-                  <h3 className={`text-3xl font-bold ${stat.color}`}>
-                    {stat.value}
-                  </h3>
-                  <p className="text-gray-500 text-sm mt-1">{stat.title}</p>
+                  <p className="text-2xl font-extrabold text-slate-800">{s.value}</p>
+                  <p className="text-sm font-medium text-slate-600">{s.label}</p>
+                  <p className="text-xs text-slate-400">{s.sub}</p>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Info Card */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-4">
-              Your Child's Information
-            </h3>
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <p className="text-blue-800">
-                <strong>Note:</strong> Parent-student linking feature will be available soon. 
-                Once linked, you'll be able to view your child's complete academic details, 
-                attendance, fee status, and results from this dashboard.
-              </p>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 animate-fade-in">
+            <div className="cms-card p-5 lg:col-span-2">
+              <h3 className="cms-section-title mb-4">Quick Access</h3>
+              <div className="grid grid-cols-2 gap-3">
+                {quickLinks.map(l => (
+                  <button key={l.label} onClick={() => navigate(l.path)} className="cms-action-card" style={{ background: l.gradient }}>
+                    <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">{l.icon}</div>
+                    <span>{l.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="cms-card p-5">
+              <h3 className="cms-section-title mb-4">My Account</h3>
+              <div className="flex flex-col items-center text-center gap-3">
+                <div className="w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl font-bold"
+                  style={{ background: 'linear-gradient(135deg,#4f46e5,#38bdf8)' }}>
+                  {user?.name?.charAt(0)}
+                </div>
+                <div>
+                  <p className="font-bold text-slate-800">{user?.name}</p>
+                  <p className="text-xs text-slate-400">{user?.email}</p>
+                </div>
+                <button onClick={() => navigate('/parent/notices')} className="cms-btn-secondary w-full justify-center">
+                  View Notices <MdArrowForward size={15} />
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </main>
       </div>
     </div>
   )

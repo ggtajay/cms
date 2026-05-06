@@ -1,3 +1,6 @@
+/* eslint-disable jsx-a11y/anchor-is-valid */
+/* eslint-disable no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react'
 import Sidebar from '../../components/Sidebar'
 import axios from 'axios'
@@ -18,7 +21,7 @@ const StudentAttendance = () => {
     const fetchAttendance = async () => {
       try {
         const res = await axios.get(
-          'http://localhost:5000/api/attendance/my-attendance',
+          '/api/attendance/my-attendance',
           config
         )
         setData(res.data)

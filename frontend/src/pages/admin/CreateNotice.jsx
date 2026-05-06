@@ -31,7 +31,7 @@ const CreateNotice = () => {
     e.preventDefault()
     setLoading(true)
     try {
-      await axios.post('http://localhost:5000/api/notices', formData, config)
+      await axios.post('/api/notices', formData, config)
       toast.success('Notice created successfully!')
       setTimeout(() => {
         navigate('/admin/notices')

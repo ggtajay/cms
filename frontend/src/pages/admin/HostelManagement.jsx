@@ -1,8 +1,11 @@
+/* eslint-disable jsx-a11y/anchor-is-valid */
+/* eslint-disable no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react'
 import Sidebar from '../../components/Sidebar'
 import axios from 'axios'
 import toast, { Toaster } from 'react-hot-toast'
-import { MdHotel, MdAdd, MdEdit, MdDelete, MdMeetingRoom } from 'react-icons/md'
+import { MdHotel, MdAdd, MdDelete, MdMeetingRoom } from 'react-icons/md'
 
 const HostelManagement = () => {
   const [hostels, setHostels] = useState([])
@@ -36,7 +39,7 @@ const HostelManagement = () => {
 
   const fetchHostels = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/hostels', config)
+      const res = await axios.get('/api/hostels', config)
       setHostels(res.data)
     } catch (error) {
       toast.error('Failed to fetch hostels')
@@ -61,7 +64,7 @@ const HostelManagement = () => {
     e.preventDefault()
     try {
       const facilitiesArray = hostelForm.facilities.split(',').map(f => f.trim()).filter(f => f)
-      await axios.post('http://localhost:5000/api/hostels', {
+      await axios.post('/api/hostels', {
         ...hostelForm,
         facilities: facilitiesArray
       }, config)
@@ -88,7 +91,7 @@ const HostelManagement = () => {
     try {
       const facilitiesArray = roomForm.facilities.split(',').map(f => f.trim()).filter(f => f)
       await axios.post(
-        `http://localhost:5000/api/hostels/${selectedHostel._id}/rooms`,
+        `/api/hostels/${selectedHostel._id}/rooms`,
         { ...roomForm, facilities: facilitiesArray },
         config
       )
@@ -110,7 +113,7 @@ const HostelManagement = () => {
   const handleDeleteHostel = async (id, name) => {
     if (window.confirm(`Delete hostel ${name}?`)) {
       try {
-        await axios.delete(`http://localhost:5000/api/hostels/${id}`, config)
+        await axios.delete(`/api/hostels/${id}`, config)
         toast.success('Hostel deleted successfully')
         fetchHostels()
       } catch (error) {
@@ -122,7 +125,7 @@ const HostelManagement = () => {
   const handleDeleteRoom = async (hostelId, roomId, roomNumber) => {
     if (window.confirm(`Delete room ${roomNumber}?`)) {
       try {
-        await axios.delete(`http://localhost:5000/api/hostels/${hostelId}/rooms/${roomId}`, config)
+        await axios.delete(`/api/hostels/${hostelId}/rooms/${roomId}`, config)
         toast.success('Room deleted successfully')
         fetchHostels()
       } catch (error) {

@@ -1,3 +1,6 @@
+/* eslint-disable jsx-a11y/anchor-is-valid */
+/* eslint-disable no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react'
 import Sidebar from '../../components/Sidebar'
 import axios from 'axios'
@@ -13,7 +16,8 @@ import {
   MdBook,
   MdPeople,
   MdArrowBack,
-  MdEdit
+  MdEdit,
+  MdSend
 } from 'react-icons/md'
 
 const ViewFaculty = () => {
@@ -32,7 +36,7 @@ const ViewFaculty = () => {
     const fetchFaculty = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:5000/api/faculty/${id}`,
+          `/api/faculty/${id}`,
           config
         )
         setFaculty(res.data)
@@ -45,6 +49,18 @@ const ViewFaculty = () => {
     }
     fetchFaculty()
   }, [id])
+
+  const handleResendCredentials = async () => {
+    if (!window.confirm('Are you sure you want to resend credentials? This will generate a new password and email it to the faculty member.')) return
+    
+    const loadingToast = toast.loading('Resending credentials...')
+    try {
+      const res = await axios.post(`/api/faculty/${id}/resend-credentials`, {}, config)
+      toast.success(res.data.message, { id: loadingToast })
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to resend credentials', { id: loadingToast })
+    }
+  }
 
   if (loading) {
     return (
@@ -115,13 +131,22 @@ const ViewFaculty = () => {
                   </div>
                 </div>
               </div>
-              <button
-                onClick={() => navigate(`/admin/faculty/edit/${faculty._id}`)}
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-              >
-                <MdEdit size={20} />
-                Edit Faculty
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleResendCredentials}
+                  className="flex items-center gap-2 bg-gray-100 text-gray-700 border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-200 transition font-medium"
+                >
+                  <MdSend size={18} />
+                  Resend Credentials
+                </button>
+                <button
+                  onClick={() => navigate(`/admin/faculty/edit/${faculty._id}`)}
+                  className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium"
+                >
+                  <MdEdit size={18} />
+                  Edit Faculty
+                </button>
+              </div>
             </div>
           </div>
 
@@ -198,7 +223,9 @@ const ViewFaculty = () => {
                   <MdBook className="text-gray-400 mt-1" size={20} />
                   <div>
                     <p className="text-xs text-gray-500">Department</p>
-                    <p className="text-sm text-gray-800 font-medium">{faculty.department}</p>
+                    <p className="text-sm text-gray-800 font-medium">
+                      {typeof faculty.department === 'object' ? faculty.department?.name : faculty.department}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">

@@ -1,236 +1,209 @@
 import React, { useState, useEffect } from 'react'
 import Sidebar from '../../components/Sidebar'
+import Topbar from '../../components/Topbar'
 import axios from 'axios'
 import toast, { Toaster } from 'react-hot-toast'
-import { MdPeople, MdSearch, MdEdit, MdDelete, MdVisibility } from 'react-icons/md'
+import { MdPeople, MdSearch, MdEdit, MdDelete, MdVisibility, MdPersonAdd, MdFilterList } from 'react-icons/md'
 import { useNavigate } from 'react-router-dom'
 
 const AllStudents = () => {
-  const [students, setStudents] = useState([])
-  const [filtered, setFiltered] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
+  const [students,     setStudents]     = useState([])
+  const [filtered,     setFiltered]     = useState([])
+  const [loading,      setLoading]      = useState(true)
+  const [search,       setSearch]       = useState('')
   const [courseFilter, setCourseFilter] = useState('all')
-  const token = localStorage.getItem('token')
-  const user = JSON.parse(localStorage.getItem('user'))
+  const token    = localStorage.getItem('token')
   const navigate = useNavigate()
-
-  const config = {
-    headers: { Authorization: `Bearer ${token}` }
-  }
+  const config   = { headers: { Authorization: `Bearer ${token}` } }
 
   const fetchStudents = async () => {
     try {
-      const res = await axios.get(
-        'http://localhost:5000/api/students',
-        config
-      )
+      const res = await axios.get('/api/students', config)
       setStudents(res.data)
       setFiltered(res.data)
-    } catch (error) {
+    } catch {
       toast.error('Failed to fetch students')
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => {
-    fetchStudents()
-  }, [])
+  useEffect(() => { fetchStudents() }, []) // eslint-disable-line
 
-  // Search and filter
   useEffect(() => {
     let result = students
     if (search) {
-      result = result.filter(
-        (s) =>
-          s.name.toLowerCase().includes(search.toLowerCase()) ||
-          s.email.toLowerCase().includes(search.toLowerCase()) ||
-          s.rollNumber.toLowerCase().includes(search.toLowerCase())
+      result = result.filter(s =>
+        s.name?.toLowerCase().includes(search.toLowerCase()) ||
+        s.email?.toLowerCase().includes(search.toLowerCase()) ||
+        s.rollNumber?.toLowerCase().includes(search.toLowerCase())
       )
     }
-    if (courseFilter !== 'all') {
-      result = result.filter((s) => s.course === courseFilter)
-    }
+    if (courseFilter !== 'all') result = result.filter(s => s.course === courseFilter)
     setFiltered(result)
   }, [search, courseFilter, students])
 
   const handleDelete = async (id, name) => {
-    if (window.confirm(`Are you sure you want to delete ${name}?`)) {
-      try {
-        await axios.delete(
-          `http://localhost:5000/api/students/${id}`,
-          config
-        )
-        toast.success('Student deleted successfully')
-        fetchStudents()
-      } catch (error) {
-        toast.error('Failed to delete student')
-      }
+    if (!window.confirm(`Delete ${name}?`)) return
+    try {
+      await axios.delete(`/api/students/${id}`, config)
+      toast.success('Student deleted')
+      fetchStudents()
+    } catch {
+      toast.error('Failed to delete student')
     }
   }
 
-  // Get unique courses
-  const courses = ['all', ...new Set(students.map(s => s.course))]
+  const courses = ['all', ...new Set(students.map(s => s.course).filter(Boolean))]
+
+  const statusBadge = (status) => {
+    if (status === 'active')    return <span className="cms-badge-green"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />{status}</span>
+    if (status === 'graduated') return <span className="cms-badge-blue"><span className="w-1.5 h-1.5 rounded-full bg-blue-500" />{status}</span>
+    return <span className="cms-badge-red"><span className="w-1.5 h-1.5 rounded-full bg-red-500" />{status || 'unknown'}</span>
+  }
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="cms-layout">
       <Sidebar />
-      <Toaster position="top-right" />
+      <Toaster position="top-right" toastOptions={{ className: 'font-sans text-sm' }} />
 
-      <div className="flex-1 flex flex-col">
-        {/* Top Navbar */}
-        <div className="bg-white shadow px-6 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold text-gray-800">All Students</h1>
-          <div className="flex items-center gap-3">
-            <div className="bg-blue-600 w-9 h-9 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold">
-                {user?.name?.charAt(0)}
-              </span>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-800">{user?.name}</p>
-              <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Page Content */}
-        <div className="p-6">
-          {/* Search and Filter */}
-          <div className="bg-white rounded-xl shadow-sm p-4 mb-6 flex flex-col md:flex-row gap-4">
-            {/* Search */}
-            <div className="flex-1 flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2">
-              <MdSearch size={20} className="text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by name, email or roll number..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="flex-1 outline-none text-sm"
-              />
-            </div>
-
-            {/* Course Filter */}
-            <select
-              value={courseFilter}
-              onChange={(e) => setCourseFilter(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none bg-white"
-            >
-              {courses.map(course => (
-                <option key={course} value={course}>
-                  {course === 'all' ? 'All Courses' : course}
-                </option>
-              ))}
-            </select>
-
-            <button
-              onClick={() => navigate('/admin/students/add')}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition"
-            >
-              + Add Student
+      <div className="cms-main">
+        <Topbar
+          title="All Students"
+          subtitle={`${filtered.length} students found`}
+          actions={
+            <button onClick={() => navigate('/admin/students/add')} className="cms-btn-primary">
+              <MdPersonAdd size={17} /> Add Student
             </button>
+          }
+        />
+
+        <main className="cms-content">
+
+          {/* ── Search & Filter ─────────────────────────────── */}
+          <div className="cms-card p-4 animate-fade-in">
+            <div className="flex flex-col md:flex-row gap-3">
+              {/* Search */}
+              <div className="flex-1 flex items-center gap-2.5 bg-[#fafbff] border border-[#e8edf5] rounded-xl px-4 py-2.5 focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100 transition-all">
+                <MdSearch size={18} className="text-slate-400 flex-shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Search by name, email or roll number…"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="flex-1 text-sm outline-none bg-transparent text-slate-700 placeholder-slate-400"
+                />
+              </div>
+
+              {/* Course filter */}
+              <div className="flex items-center gap-2 bg-[#fafbff] border border-[#e8edf5] rounded-xl px-3 py-2.5">
+                <MdFilterList size={17} className="text-slate-400" />
+                <select
+                  value={courseFilter}
+                  onChange={e => setCourseFilter(e.target.value)}
+                  className="text-sm outline-none bg-transparent text-slate-600"
+                >
+                  {courses.map(c => (
+                    <option key={c} value={c}>{c === 'all' ? 'All Courses' : c}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
 
-          {/* Students Table */}
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div className="p-4 border-b flex items-center justify-between">
-              <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                <MdPeople size={20} className="text-blue-600" />
-                Students ({filtered.length})
-              </h3>
+          {/* ── Table ───────────────────────────────────────── */}
+          <div className="cms-card overflow-hidden animate-fade-in">
+            {/* Table header bar */}
+            <div className="px-5 py-4 border-b border-[#e8edf5] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-brand-50 flex items-center justify-center">
+                  <MdPeople size={18} className="text-brand-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-800">Students</p>
+                  <p className="text-xs text-slate-400">{filtered.length} records</p>
+                </div>
+              </div>
             </div>
 
             {loading ? (
-              <div className="text-center py-12 text-gray-400">
-                Loading students...
+              <div className="p-8 space-y-4">
+                {Array(5).fill(0).map((_, i) => (
+                  <div key={i} className="skeleton h-12 rounded-xl" />
+                ))}
               </div>
             ) : filtered.length === 0 ? (
-              <div className="text-center py-12 text-gray-400">
-                <MdPeople size={48} className="mx-auto mb-3 opacity-30" />
-                <p>No students found</p>
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-brand-50 flex items-center justify-center mb-4">
+                  <MdPeople size={32} className="text-brand-300" />
+                </div>
+                <p className="text-slate-500 font-medium">No students found</p>
+                <p className="text-sm text-slate-400 mt-1">Try adjusting your search or filter</p>
+                <button onClick={() => navigate('/admin/students/add')} className="cms-btn-primary mt-4">
+                  <MdPersonAdd size={16} /> Add Student
+                </button>
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
+                <table className="cms-table">
+                  <thead>
                     <tr>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">#</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Student</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Roll No</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Course</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Department</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Semester</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Actions</th>
+                      <th>#</th>
+                      <th>Student</th>
+                      <th>Roll No</th>
+                      <th>Course</th>
+                      <th>Department</th>
+                      <th>Semester</th>
+                      <th>Status</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody>
                     {filtered.map((student, index) => (
-                      <tr key={student._id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 text-sm text-gray-500">
-                          {index + 1}
-                        </td>
-                        <td className="px-6 py-4">
+                      <tr key={student._id}>
+                        <td className="text-slate-400 text-xs font-medium">{index + 1}</td>
+                        <td>
                           <div className="flex items-center gap-3">
-                            <div className="bg-blue-600 w-10 h-10 rounded-full flex items-center justify-center">
-                              <span className="text-white text-sm font-bold">
-                                {student.name.charAt(0)}
-                              </span>
-                            </div>
+                            {student.profileImage ? (
+                              <img src={student.profileImage} alt={student.name} className="w-9 h-9 rounded-full object-cover flex-shrink-0 ring-2 ring-brand-100" />
+                            ) : (
+                              <div className="cms-avatar w-9 h-9 text-sm flex-shrink-0">
+                                {student.name?.charAt(0)}
+                              </div>
+                            )}
                             <div>
-                              <p className="text-sm font-medium text-gray-800">
-                                {student.name}
-                              </p>
-                              <p className="text-xs text-gray-500">{student.email}</p>
+                              <p className="font-semibold text-slate-800 text-sm">{student.name}</p>
+                              <p className="text-xs text-slate-400">{student.email}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-600 font-medium">
-                          {student.rollNumber}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          {student.course}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          {student.department}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          Sem {student.semester}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            student.admissionStatus === 'active'
-                              ? 'bg-green-100 text-green-700'
-                              : student.admissionStatus === 'graduated'
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'bg-red-100 text-red-700'
-                          }`}>
-                            {student.admissionStatus}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
+                        <td><span className="font-mono text-xs font-semibold text-brand-700 bg-brand-50 px-2 py-0.5 rounded-lg">{student.rollNumber}</span></td>
+                        <td className="text-slate-600">{student.course}</td>
+                        <td className="text-slate-600">{student.department}</td>
+                        <td><span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-lg">Sem {student.semester}</span></td>
+                        <td>{statusBadge(student.admissionStatus)}</td>
+                        <td>
+                          <div className="flex items-center gap-1.5">
                             <button
                               onClick={() => navigate(`/admin/students/view/${student._id}`)}
-                              className="text-blue-600 hover:text-blue-800"
-                              title="View Details"
+                              title="View"
+                              className="w-8 h-8 rounded-lg flex items-center justify-center text-brand-600 hover:bg-brand-50 transition-colors"
                             >
-                              <MdVisibility size={20} />
+                              <MdVisibility size={17} />
                             </button>
                             <button
                               onClick={() => navigate(`/admin/students/edit/${student._id}`)}
-                              className="text-green-600 hover:text-green-800"
                               title="Edit"
+                              className="w-8 h-8 rounded-lg flex items-center justify-center text-emerald-600 hover:bg-emerald-50 transition-colors"
                             >
-                              <MdEdit size={20} />
+                              <MdEdit size={17} />
                             </button>
                             <button
                               onClick={() => handleDelete(student._id, student.name)}
-                              className="text-red-600 hover:text-red-800"
                               title="Delete"
+                              className="w-8 h-8 rounded-lg flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors"
                             >
-                              <MdDelete size={20} />
+                              <MdDelete size={17} />
                             </button>
                           </div>
                         </td>
@@ -241,7 +214,7 @@ const AllStudents = () => {
               </div>
             )}
           </div>
-        </div>
+        </main>
       </div>
     </div>
   )

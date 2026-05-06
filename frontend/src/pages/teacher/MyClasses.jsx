@@ -1,174 +1,407 @@
-import React from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import Sidebar from '../../components/Sidebar'
-import { MdSchedule, MdClass, MdPeople } from 'react-icons/md'
+import axios from 'axios'
+import toast, { Toaster } from 'react-hot-toast'
+import {
+  MdSchedule,
+  MdLocationOn,
+  MdAccessTime,
+  MdBook,
+  MdRefresh,
+  MdCalendarToday,
+} from 'react-icons/md'
 
-const MyClasses = () => {
+// Day order for sorting
+const DAY_ORDER = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+// Color palette — each subject gets a consistent hue
+const PALETTE = [
+  'from-blue-500 to-blue-600',
+  'from-violet-500 to-violet-600',
+  'from-emerald-500 to-emerald-600',
+  'from-amber-500 to-amber-600',
+  'from-rose-500 to-rose-600',
+  'from-cyan-500 to-cyan-600',
+  'from-indigo-500 to-indigo-600',
+  'from-pink-500 to-pink-600',
+]
+
+const subjectColor = (() => {
+  const map = {}
+  let idx = 0
+  return (subject) => {
+    if (!map[subject]) {
+      map[subject] = PALETTE[idx % PALETTE.length]
+      idx++
+    }
+    return map[subject]
+  }
+})()
+
+const MyTimetable = () => {
   const user = JSON.parse(localStorage.getItem('user'))
+  const token = localStorage.getItem('token')
 
-  // Sample timetable data (in production, fetch from backend)
-  const timetable = [
-    { day: 'Monday', slots: [
-      { time: '9:00-10:00', subject: 'Data Structures', class: 'BTech Sem 3 A', room: 'Lab 1' },
-      { time: '11:00-12:00', subject: 'Algorithms', class: 'BTech Sem 5 A', room: 'Room 201' },
-      { time: '2:00-3:00', subject: 'Database Systems', class: 'BTech Sem 3 B', room: 'Room 105' }
-    ]},
-    { day: 'Tuesday', slots: [
-      { time: '10:00-11:00', subject: 'Data Structures', class: 'BTech Sem 3 A', room: 'Room 202' },
-      { time: '1:00-2:00', subject: 'Algorithms', class: 'BTech Sem 5 A', room: 'Room 203' }
-    ]},
-    { day: 'Wednesday', slots: [
-      { time: '9:00-10:00', subject: 'Database Systems', class: 'BTech Sem 3 B', room: 'Lab 2' },
-      { time: '12:00-1:00', subject: 'Data Structures', class: 'BTech Sem 3 A', room: 'Room 201' }
-    ]},
-    { day: 'Thursday', slots: [
-      { time: '11:00-12:00', subject: 'Algorithms', class: 'BTech Sem 5 A', room: 'Room 201' },
-      { time: '2:00-3:00', subject: 'Data Structures', class: 'BTech Sem 3 A', room: 'Lab 1' }
-    ]},
-    { day: 'Friday', slots: [
-      { time: '10:00-11:00', subject: 'Database Systems', class: 'BTech Sem 3 B', room: 'Room 105' },
-      { time: '1:00-2:00', subject: 'Algorithms', class: 'BTech Sem 5 A', room: 'Room 203' }
-    ]}
-  ]
-
-  const myClasses = [
-    { name: 'BTech Sem 3 A', subject: 'Data Structures', students: 45, schedule: 'Mon, Wed, Thu' },
-    { name: 'BTech Sem 5 A', subject: 'Algorithms', students: 38, schedule: 'Mon, Tue, Thu, Fri' },
-    { name: 'BTech Sem 3 B', subject: 'Database Systems', students: 42, schedule: 'Mon, Wed, Fri' }
-  ]
+  const [slots, setSlots] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [view, setView] = useState('week') // 'week' | 'list'
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long' })
-  const todaySchedule = timetable.find(t => t.day === today)
+
+  const fetchTimetable = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const config = { headers: { Authorization: `Bearer ${token}` } }
+      const res = await axios.get('/api/timetable', config)
+      setSlots(res.data)
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to load timetable'
+      setError(msg)
+      toast.error(msg)
+    } finally {
+      setLoading(false)
+    }
+  }, [token])
+
+  useEffect(() => {
+    fetchTimetable()
+  }, [fetchTimetable])
+
+  // Group by day (sorted)
+  const byDay = DAY_ORDER.reduce((acc, day) => {
+    const daySlots = slots
+      .filter((s) => s.day === day)
+      .sort((a, b) => a.timeSlot.localeCompare(b.timeSlot))
+    if (daySlots.length > 0) acc[day] = daySlots
+    return acc
+  }, {})
+
+  const todaySlots = byDay[today] || []
+
+  // Summary stats
+  const uniqueSubjects = [...new Set(slots.map((s) => s.subject))]
+  const totalClasses = slots.length
+  const activeDays = Object.keys(byDay).length
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-slate-50">
       <Sidebar />
+      <Toaster position="top-right" />
 
-      <div className="flex-1 flex flex-col">
-        <div className="bg-white shadow px-6 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold text-gray-800">My Classes & Timetable</h1>
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Header */}
+        <header className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center sticky top-0 z-10">
+          <div>
+            <h1 className="text-lg font-bold text-slate-800">My Timetable</h1>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {new Date().toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </p>
+          </div>
           <div className="flex items-center gap-3">
-            <div className="bg-blue-600 w-9 h-9 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold">{user?.name?.charAt(0)}</span>
+            {/* View toggle */}
+            <div className="flex bg-slate-100 rounded-xl p-1 gap-1">
+              <button
+                onClick={() => setView('week')}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                  view === 'week'
+                    ? 'bg-white text-slate-800 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                Week View
+              </button>
+              <button
+                onClick={() => setView('list')}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                  view === 'list'
+                    ? 'bg-white text-slate-800 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                List View
+              </button>
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-800">{user?.name}</p>
-              <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
+            <button
+              onClick={fetchTimetable}
+              className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition"
+              title="Refresh"
+            >
+              <MdRefresh size={18} className={loading ? 'animate-spin' : ''} />
+            </button>
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center">
+              <span className="text-white font-bold text-sm">{user?.name?.charAt(0)}</span>
             </div>
           </div>
-        </div>
+        </header>
 
-        <div className="p-6">
-          {/* Today's Schedule */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-6 mb-6 text-white">
-            <h2 className="text-2xl font-bold mb-2">Today's Schedule - {today}</h2>
-            {todaySchedule && todaySchedule.slots.length > 0 ? (
-              <div className="space-y-3 mt-4">
-                {todaySchedule.slots.map((slot, index) => (
-                  <div key={index} className="bg-white bg-opacity-20 rounded-lg p-4">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-bold text-lg">{slot.subject}</p>
-                        <p className="text-sm opacity-90">{slot.class}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">{slot.time}</p>
-                        <p className="text-sm opacity-90">{slot.room}</p>
-                      </div>
-                    </div>
+        <main className="flex-1 p-6 space-y-6">
+
+          {/* Error state */}
+          {error && !loading && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center justify-between">
+              <p className="text-sm text-red-700">{error}</p>
+              <button
+                onClick={fetchTimetable}
+                className="text-sm text-red-600 font-semibold hover:underline"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
+          {/* Loading skeletons */}
+          {loading && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-20 bg-white rounded-2xl animate-pulse border border-slate-100" />
+                ))}
+              </div>
+              {[1, 2].map((i) => (
+                <div key={i} className="h-36 bg-white rounded-2xl animate-pulse border border-slate-100" />
+              ))}
+            </div>
+          )}
+
+          {!loading && !error && (
+            <>
+              {/* Stats Row */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {[
+                  {
+                    label: 'Total Slots/Week',
+                    value: totalClasses,
+                    icon: <MdCalendarToday size={20} />,
+                    bg: 'bg-blue-50',
+                    icon_color: 'text-blue-600',
+                  },
+                  {
+                    label: 'Active Days',
+                    value: activeDays,
+                    icon: <MdSchedule size={20} />,
+                    bg: 'bg-violet-50',
+                    icon_color: 'text-violet-600',
+                  },
+                  {
+                    label: 'Subjects',
+                    value: uniqueSubjects.length,
+                    icon: <MdBook size={20} />,
+                    bg: 'bg-emerald-50',
+                    icon_color: 'text-emerald-600',
+                  },
+                ].map((s) => (
+                  <div key={s.label} className={`${s.bg} rounded-2xl border border-slate-100 p-5`}>
+                    <div className={`${s.icon_color} mb-2`}>{s.icon}</div>
+                    <p className="text-2xl font-bold text-slate-800">{s.value}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{s.label}</p>
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="text-white opacity-75 mt-4">No classes scheduled for today</p>
-            )}
-          </div>
 
-          {/* My Classes */}
-          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <MdClass className="text-blue-600" />
-              My Classes
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {myClasses.map((cls, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="bg-blue-100 p-2 rounded-lg">
-                      <MdClass className="text-blue-600" size={24} />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-gray-800">{cls.subject}</h4>
-                      <p className="text-sm text-gray-500">{cls.name}</p>
-                    </div>
+              {/* Empty State */}
+              {slots.length === 0 && (
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-16 text-center">
+                  <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <MdSchedule size={36} className="text-slate-300" />
                   </div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Students:</span>
-                      <span className="font-medium">{cls.students}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Schedule:</span>
-                      <span className="font-medium text-xs">{cls.schedule}</span>
-                    </div>
-                  </div>
+                  <h3 className="text-lg font-bold text-slate-700 mb-2">
+                    No Timetable Assigned Yet
+                  </h3>
+                  <p className="text-sm text-slate-400 max-w-sm mx-auto">
+                    Your timetable has not been set up by the admin. Please contact
+                    your Academic Coordinator or Admin.
+                  </p>
                 </div>
-              ))}
-            </div>
-          </div>
+              )}
 
-          {/* Weekly Timetable */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <MdSchedule className="text-blue-600" />
-              Weekly Timetable
-            </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="text-left px-4 py-3 text-sm font-medium text-gray-700">Day</th>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-gray-700">Schedule</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {timetable.map((day) => (
-                    <tr key={day.day} className={`hover:bg-gray-50 ${day.day === today ? 'bg-blue-50' : ''}`}>
-                      <td className="px-4 py-4">
-                        <p className="font-bold text-gray-800">{day.day}</p>
-                        {day.day === today && (
-                          <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full">Today</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-4">
-                        {day.slots.length > 0 ? (
-                          <div className="space-y-2">
-                            {day.slots.map((slot, index) => (
-                              <div key={index} className="flex justify-between items-center text-sm bg-gray-50 p-2 rounded">
-                                <div>
-                                  <p className="font-medium text-gray-800">{slot.subject}</p>
-                                  <p className="text-xs text-gray-500">{slot.class}</p>
-                                </div>
-                                <div className="text-right">
-                                  <p className="font-medium text-gray-700">{slot.time}</p>
-                                  <p className="text-xs text-gray-500">{slot.room}</p>
-                                </div>
-                              </div>
-                            ))}
+              {/* Today's Banner */}
+              {slots.length > 0 && (
+                <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-violet-700 rounded-2xl p-6 text-white shadow-lg">
+                  <div className="flex items-center gap-2 mb-3">
+                    <MdCalendarToday size={16} className="opacity-80" />
+                    <span className="text-sm font-semibold opacity-80">Today — {today}</span>
+                  </div>
+                  {todaySlots.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {todaySlots.map((slot) => (
+                        <div
+                          key={slot._id}
+                          className="bg-white/15 backdrop-blur-sm rounded-xl p-4 border border-white/20"
+                        >
+                          <p className="font-bold text-base">{slot.subject}</p>
+                          <p className="text-xs opacity-80 mt-0.5">
+                            {slot.course} Sem {slot.semester}
+                            {slot.section ? ` · ${slot.section}` : ''}
+                          </p>
+                          <div className="flex items-center gap-3 mt-2 text-xs opacity-80">
+                            <span className="flex items-center gap-1">
+                              <MdAccessTime size={12} /> {slot.timeSlot}
+                            </span>
+                            {slot.room && (
+                              <span className="flex items-center gap-1">
+                                <MdLocationOn size={12} /> {slot.room}
+                              </span>
+                            )}
                           </div>
-                        ) : (
-                          <p className="text-gray-400 text-sm">No classes</p>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-white/70 text-sm">
+                      No classes scheduled for today — enjoy your free day! 🎉
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Week View */}
+              {slots.length > 0 && view === 'week' && (
+                <div className="space-y-4">
+                  {DAY_ORDER.map((day) => {
+                    const daySlots = byDay[day]
+                    if (!daySlots) return null
+                    const isToday = day === today
+                    return (
+                      <div
+                        key={day}
+                        className={`bg-white rounded-2xl shadow-sm border overflow-hidden ${
+                          isToday ? 'border-blue-300' : 'border-slate-100'
+                        }`}
+                      >
+                        <div
+                          className={`px-5 py-3 flex items-center gap-3 ${
+                            isToday ? 'bg-blue-50' : 'bg-slate-50'
+                          }`}
+                        >
+                          <span
+                            className={`font-bold text-sm ${
+                              isToday ? 'text-blue-700' : 'text-slate-700'
+                            }`}
+                          >
+                            {day}
+                          </span>
+                          {isToday && (
+                            <span className="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full font-semibold">
+                              Today
+                            </span>
+                          )}
+                          <span className="ml-auto text-xs text-slate-400">
+                            {daySlots.length} class{daySlots.length !== 1 ? 'es' : ''}
+                          </span>
+                        </div>
+                        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                          {daySlots.map((slot) => (
+                            <div
+                              key={slot._id}
+                              className={`bg-gradient-to-r ${subjectColor(slot.subject)} text-white rounded-xl p-4 shadow-sm`}
+                            >
+                              <p className="font-bold text-sm">{slot.subject}</p>
+                              <p className="text-xs opacity-80 mt-0.5">
+                                {slot.course} Sem {slot.semester}
+                                {slot.section ? ` · ${slot.section}` : ''}
+                              </p>
+                              <div className="flex items-center gap-2 mt-2 text-xs opacity-80">
+                                <MdAccessTime size={12} /> {slot.timeSlot}
+                              </div>
+                              {slot.room && (
+                                <div className="flex items-center gap-1 mt-0.5 text-xs opacity-80">
+                                  <MdLocationOn size={12} /> {slot.room}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* List View */}
+              {slots.length > 0 && view === 'list' && (
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
+                        <th className="text-left px-5 py-3 font-semibold">Day</th>
+                        <th className="text-left px-5 py-3 font-semibold">Time</th>
+                        <th className="text-left px-5 py-3 font-semibold">Subject</th>
+                        <th className="text-left px-5 py-3 font-semibold">Class</th>
+                        <th className="text-left px-5 py-3 font-semibold">Room</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {[...slots]
+                        .sort(
+                          (a, b) =>
+                            DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day) ||
+                            a.timeSlot.localeCompare(b.timeSlot)
+                        )
+                        .map((slot) => {
+                          const isToday = slot.day === today
+                          return (
+                            <tr
+                              key={slot._id}
+                              className={`transition-colors ${
+                                isToday ? 'bg-blue-50/40' : 'hover:bg-slate-50'
+                              }`}
+                            >
+                              <td className="px-5 py-3.5">
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className={`font-semibold text-sm ${
+                                      isToday ? 'text-blue-700' : 'text-slate-700'
+                                    }`}
+                                  >
+                                    {slot.day}
+                                  </span>
+                                  {isToday && (
+                                    <span className="text-xs bg-blue-600 text-white px-1.5 py-0.5 rounded-full font-medium">
+                                      Today
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-5 py-3.5">
+                                <span className="font-mono text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md">
+                                  {slot.timeSlot}
+                                </span>
+                              </td>
+                              <td className="px-5 py-3.5">
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className={`w-2.5 h-2.5 rounded-full bg-gradient-to-br ${subjectColor(slot.subject)} flex-shrink-0`}
+                                  />
+                                  <span className="font-semibold text-slate-800">{slot.subject}</span>
+                                </div>
+                              </td>
+                              <td className="px-5 py-3.5 text-slate-600 text-xs">
+                                {slot.course} Sem {slot.semester}
+                                {slot.section ? ` · ${slot.section}` : ''}
+                              </td>
+                              <td className="px-5 py-3.5 text-slate-500 text-xs">
+                                {slot.room || '—'}
+                              </td>
+                            </tr>
+                          )
+                        })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          )}
+        </main>
       </div>
     </div>
   )
 }
 
-export default MyClasses
+export default MyTimetable

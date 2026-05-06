@@ -1,432 +1,271 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Sidebar from '../../components/Sidebar'
+import Topbar from '../../components/Topbar'
 import axios from 'axios'
 import toast, { Toaster } from 'react-hot-toast'
-import { MdPersonAdd } from 'react-icons/md'
+import { MdSchool, MdCheckCircle, MdContentCopy, MdCheck } from 'react-icons/md'
+
+/* ── Stepper ─────────────────────────────────────────────── */
+const steps = ['Personal Info', 'Professional Info', 'Other Details']
+
+const Stepper = ({ step }) => (
+  <div className="flex items-center mb-8">
+    {steps.map((label, i) => {
+      const state = i + 1 < step ? 'done' : i + 1 === step ? 'active' : 'inactive'
+      return (
+        <React.Fragment key={label}>
+          <div className="flex flex-col items-center gap-1">
+            <div className={`cms-step-circle ${state}`}>
+              {state === 'done' ? <MdCheck size={18} /> : i + 1}
+            </div>
+            <span className={`text-[11px] font-semibold whitespace-nowrap ${state === 'active' ? 'text-brand-600' : state === 'done' ? 'text-emerald-600' : 'text-slate-400'}`}>
+              {label}
+            </span>
+          </div>
+          {i < steps.length - 1 && (
+            <div className={`cms-step-line ${i + 1 < step ? 'done' : 'inactive'}`} />
+          )}
+        </React.Fragment>
+      )
+    })}
+  </div>
+)
+
+const Field = ({ label, children, span2, span3 }) => (
+  <div className={span2 ? 'md:col-span-2' : span3 ? 'md:col-span-3' : ''}>
+    <label className="cms-label">{label}</label>
+    {children}
+  </div>
+)
 
 const AddFaculty = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    dateOfBirth: '',
-    gender: 'male',
-    address: '',
-    employeeId: '',
-    designation: 'Assistant Professor',
-    department: '',
-    qualification: '',
-    specialization: '',
-    experience: 0,
-    subjects: '',
-    salary: 0,
-    emergencyContact: {
-      name: '',
-      phone: '',
-      relation: ''
-    }
-  })
-  const [loading, setLoading] = useState(false)
-  const token = localStorage.getItem('token')
-  const user = JSON.parse(localStorage.getItem('user'))
+  const [step, setStep] = useState(1)
+  const [departments, setDepartments] = useState([])
 
-  const onChange = (e) => {
-    if (e.target.name.startsWith('emergency_')) {
-      const field = e.target.name.replace('emergency_', '')
-      setFormData({
-        ...formData,
-        emergencyContact: {
-          ...formData.emergencyContact,
-          [field]: e.target.value
-        }
-      })
-    } else {
-      setFormData({ ...formData, [e.target.name]: e.target.value })
-    }
-  }
+  const [formData, setFormData] = useState({
+    name: '', email: '', phone: '', dateOfBirth: '', gender: 'male', address: '',
+    designation: 'Assistant Professor', department: '', qualification: '',
+    specialization: '', experience: 0, salary: 0,
+    emergencyContactName: '', emergencyContactPhone: '', emergencyContactRelation: '',
+    subjects: '',
+  })
+
+  const [profileImage, setProfileImage] = useState(null)
+  const [loading,      setLoading]      = useState(false)
+  const [credentials,  setCredentials]  = useState(null)
+
+  const token  = localStorage.getItem('token')
+  const config = { headers: { Authorization: `Bearer ${token}` } }
+
+  useEffect(() => {
+    axios.get('/api/academic/departments', config)
+      .then(r => setDepartments(r.data))
+      .catch(() => toast.error('Failed to load departments'))
+  }, []) // eslint-disable-line
+
+  const onChange    = (e) => setFormData({ ...formData, [e.target.name]: e.target.value })
+  const onFileChange = (e) => setProfileImage(e.target.files[0] || null)
 
   const onSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
     try {
-      const config = {
-        headers: { Authorization: `Bearer ${token}` }
-      }
-      
-      // Convert subjects string to array
-      const subjectsArray = formData.subjects
-        .split(',')
-        .map(s => s.trim())
-        .filter(s => s)
-
-      const res = await axios.post(
-        'http://localhost:5000/api/faculty',
-        { ...formData, subjects: subjectsArray },
-        config
-      )
+      const { emergencyContactName, emergencyContactPhone, emergencyContactRelation, subjects, ...rest } = formData
+      const submitData = new FormData()
+      Object.entries(rest).forEach(([k, v]) => submitData.append(k, v))
+      submitData.append('subjects', JSON.stringify(subjects.split(',').map(s => s.trim()).filter(Boolean)))
+      submitData.append('emergencyContact', JSON.stringify({ name: emergencyContactName, phone: emergencyContactPhone, relation: emergencyContactRelation }))
+      if (profileImage) submitData.append('profileImage', profileImage)
+      const res = await axios.post('/api/faculty', submitData, config)
       toast.success(res.data.message)
+      setCredentials(res.data.credentials)
       setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        dateOfBirth: '',
-        gender: 'male',
-        address: '',
-        employeeId: '',
-        designation: 'Assistant Professor',
-        department: '',
-        qualification: '',
-        specialization: '',
-        experience: 0,
-        subjects: '',
-        salary: 0,
-        emergencyContact: {
-          name: '',
-          phone: '',
-          relation: ''
-        }
+        name: '', email: '', phone: '', dateOfBirth: '', gender: 'male', address: '',
+        designation: 'Assistant Professor', department: '', qualification: '',
+        specialization: '', experience: 0, salary: 0,
+        emergencyContactName: '', emergencyContactPhone: '', emergencyContactRelation: '', subjects: '',
       })
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to add faculty')
+      setProfileImage(null)
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to add faculty')
     } finally {
       setLoading(false)
     }
   }
 
+  const closeCredentials = () => { setCredentials(null); setStep(1) }
+  const copy = (text) => { navigator.clipboard.writeText(text); toast.success('Copied!') }
+
+  const inputCls  = 'cms-input'
+  const selectCls = `${inputCls} bg-white`
+
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="cms-layout">
       <Sidebar />
-      <Toaster position="top-right" />
+      <Toaster position="top-right" toastOptions={{ className: 'font-sans text-sm' }} />
 
-      <div className="flex-1 flex flex-col">
-        {/* Top Navbar */}
-        <div className="bg-white shadow px-6 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold text-gray-800">Add New Faculty</h1>
-          <div className="flex items-center gap-3">
-            <div className="bg-blue-600 w-9 h-9 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold">
-                {user?.name?.charAt(0)}
-              </span>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-800">{user?.name}</p>
-              <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
+      <div className="cms-main">
+        <Topbar title="Add New Faculty" subtitle="Register a new faculty member" />
+
+        <main className="cms-content">
+          <div className="max-w-4xl mx-auto animate-fade-in">
+            <div className="cms-card p-8 relative">
+
+              <Stepper step={step} />
+
+              <form onSubmit={onSubmit}>
+
+                {/* STEP 1: Personal Info */}
+                {step === 1 && (
+                  <div className="animate-fade-in">
+                    <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[#e8edf5]">
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#4f46e5,#3b82f6)' }}>
+                        <MdSchool size={18} className="text-white" />
+                      </div>
+                      <h3 className="text-base font-bold text-slate-800">Personal Information</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Field label="Full Name *"><input type="text" name="name" value={formData.name} onChange={onChange} required placeholder="Enter full name" className={inputCls} /></Field>
+                      <Field label="Email Address *"><input type="email" name="email" value={formData.email} onChange={onChange} required placeholder="faculty@example.com" className={inputCls} /></Field>
+                      <Field label="Phone Number *"><input type="tel" name="phone" value={formData.phone} onChange={onChange} required placeholder="+91 1234567890" className={inputCls} /></Field>
+                      <Field label="Date of Birth *"><input type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={onChange} required className={inputCls} /></Field>
+                      <Field label="Gender *">
+                        <select name="gender" value={formData.gender} onChange={onChange} className={selectCls}>
+                          <option value="male">Male</option>
+                          <option value="female">Female</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </Field>
+                      <Field label="Address *" span2><textarea name="address" value={formData.address} onChange={onChange} required rows={2} placeholder="Enter full address" className={`${inputCls} resize-none`} /></Field>
+                      <Field label="Profile Photo" span2>
+                        <input type="file" accept="image/*" onChange={onFileChange}
+                          className="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 transition-all cursor-pointer" />
+                      </Field>
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 2: Professional Info */}
+                {step === 2 && (
+                  <div className="animate-fade-in">
+                    <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[#e8edf5]">
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#0369a1,#38bdf8)' }}>
+                        <MdSchool size={18} className="text-white" />
+                      </div>
+                      <h3 className="text-base font-bold text-slate-800">Professional Information</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Field label="Designation *">
+                        <select name="designation" value={formData.designation} onChange={onChange} required className={selectCls}>
+                          {['Professor','Associate Professor','Assistant Professor','Lecturer','HOD','Lab Assistant'].map(d => (
+                            <option key={d} value={d}>{d}</option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label="Department *">
+                        <select name="department" value={formData.department} onChange={onChange} required className={selectCls}>
+                          <option value="">Select Department</option>
+                          {departments.map(d => <option key={d._id} value={d._id}>{d.name} ({d.code})</option>)}
+                        </select>
+                      </Field>
+                      <Field label="Qualification *"><input type="text" name="qualification" value={formData.qualification} onChange={onChange} required placeholder="e.g. PhD, M.Tech" className={inputCls} /></Field>
+                      <Field label="Specialization"><input type="text" name="specialization" value={formData.specialization} onChange={onChange} placeholder="e.g. AI, Machine Learning" className={inputCls} /></Field>
+                      <Field label="Experience (Years) *"><input type="number" name="experience" value={formData.experience} onChange={onChange} required min="0" className={inputCls} /></Field>
+                      <Field label="Monthly Salary (₹)"><input type="number" name="salary" value={formData.salary} onChange={onChange} min="0" className={inputCls} /></Field>
+                    </div>
+                    <div className="mt-6 p-4 rounded-2xl bg-brand-50 border border-brand-100">
+                      <p className="text-sm text-brand-700 font-medium">🔐 Faculty ID will be auto-generated after submission.</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 3: Other Details */}
+                {step === 3 && (
+                  <div className="animate-fade-in">
+                    <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[#e8edf5]">
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#059669,#10b981)' }}>
+                        <MdSchool size={18} className="text-white" />
+                      </div>
+                      <h3 className="text-base font-bold text-slate-800">Subjects & Emergency Contact</h3>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4 mb-6">
+                      <Field label="Teaching Subjects (comma-separated)">
+                        <input type="text" name="subjects" value={formData.subjects} onChange={onChange} placeholder="Data Structures, Algorithms, DBMS" className={inputCls} />
+                      </Field>
+                    </div>
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Emergency Contact</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <Field label="Name"><input type="text" name="emergencyContactName" value={formData.emergencyContactName} onChange={onChange} placeholder="Contact name" className={inputCls} /></Field>
+                      <Field label="Phone"><input type="tel" name="emergencyContactPhone" value={formData.emergencyContactPhone} onChange={onChange} placeholder="Contact phone" className={inputCls} /></Field>
+                      <Field label="Relation"><input type="text" name="emergencyContactRelation" value={formData.emergencyContactRelation} onChange={onChange} placeholder="Relation" className={inputCls} /></Field>
+                    </div>
+                  </div>
+                )}
+
+                {/* Navigation */}
+                <div className="flex justify-between mt-8 pt-5 border-t border-[#e8edf5]">
+                  {step > 1 ? (
+                    <button type="button" onClick={() => setStep(s => s - 1)} className="cms-btn-ghost border border-[#e8edf5]">← Back</button>
+                  ) : <div />}
+                  {step < 3 ? (
+                    <button type="button" onClick={() => setStep(s => s + 1)} className="cms-btn-primary">Next Step →</button>
+                  ) : (
+                    <button type="submit" disabled={loading} className="cms-btn-primary disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none">
+                      {loading ? (
+                        <span className="flex items-center gap-2">
+                          <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                          </svg>
+                          Submitting…
+                        </span>
+                      ) : '✓ Register Faculty'}
+                    </button>
+                  )}
+                </div>
+              </form>
+
+              {/* Credentials Modal */}
+              {credentials && (
+                <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-10 flex items-center justify-center rounded-2xl p-6">
+                  <div className="bg-white rounded-2xl shadow-2xl border border-[#e8edf5] p-8 max-w-md w-full text-center animate-fade-in">
+                    <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-4">
+                      <MdCheckCircle size={36} className="text-emerald-500" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-800 mb-1">Registration Successful!</h3>
+                    <p className="text-sm text-slate-400 mb-6">Faculty ID has been generated.</p>
+
+                    <div className="bg-[#fafbff] rounded-2xl p-4 text-left mb-5 border border-[#e8edf5] space-y-3">
+                      {[
+                        { label: 'Faculty ID', value: credentials.userId },
+                        { label: 'Password',   value: credentials.password },
+                      ].map(row => (
+                        <div key={row.label}>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">{row.label}</p>
+                          <div className="flex items-center justify-between bg-white border border-[#e8edf5] rounded-xl px-3 py-2">
+                            <span className="font-mono font-bold text-slate-800 text-sm">{row.value}</span>
+                            <button onClick={() => copy(row.value)} className="text-slate-400 hover:text-brand-600 transition-colors">
+                              <MdContentCopy size={17} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mb-5 text-sm">
+                      {credentials.emailSent
+                        ? <p className="text-emerald-600 font-medium">✓ Credentials sent to faculty's email</p>
+                        : <p className="text-red-500 font-medium">⚠️ Email failed — please resend from faculty list</p>
+                      }
+                    </div>
+
+                    <button onClick={closeCredentials} className="cms-btn-primary w-full justify-center py-3">Done</button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-        </div>
-
-        {/* Page Content */}
-        <div className="p-6">
-          <div className="bg-white rounded-xl shadow-sm p-8 max-w-4xl">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="bg-blue-100 p-3 rounded-xl">
-                <MdPersonAdd size={28} className="text-blue-600" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-800">
-                  Faculty Registration Form
-                </h2>
-                <p className="text-gray-500 text-sm">
-                  Fill in faculty details to create a new record
-                </p>
-              </div>
-            </div>
-
-            <form onSubmit={onSubmit}>
-              {/* Personal Information */}
-              <div className="mb-6">
-                <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-b">
-                  Personal Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={onChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter full name"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={onChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="faculty@example.com"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
-                      Phone Number *
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={onChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="+91 1234567890"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
-                      Date of Birth *
-                    </label>
-                    <input
-                      type="date"
-                      name="dateOfBirth"
-                      value={formData.dateOfBirth}
-                      onChange={onChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
-                      Gender *
-                    </label>
-                    <select
-                      name="gender"
-                      value={formData.gender}
-                      onChange={onChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                    >
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
-                      Address *
-                    </label>
-                    <textarea
-                      name="address"
-                      value={formData.address}
-                      onChange={onChange}
-                      required
-                      rows="3"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter full address"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Professional Information */}
-              <div className="mb-6">
-                <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-b">
-                  Professional Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
-                      Employee ID *
-                    </label>
-                    <input
-                      type="text"
-                      name="employeeId"
-                      value={formData.employeeId}
-                      onChange={onChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="e.g., FAC001"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
-                      Designation *
-                    </label>
-                    <select
-                      name="designation"
-                      value={formData.designation}
-                      onChange={onChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                    >
-                      <option value="Professor">Professor</option>
-                      <option value="Associate Professor">Associate Professor</option>
-                      <option value="Assistant Professor">Assistant Professor</option>
-                      <option value="Lecturer">Lecturer</option>
-                      <option value="HOD">HOD</option>
-                      <option value="Lab Assistant">Lab Assistant</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
-                      Department *
-                    </label>
-                    <input
-                      type="text"
-                      name="department"
-                      value={formData.department}
-                      onChange={onChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="e.g., Computer Science"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
-                      Qualification *
-                    </label>
-                    <input
-                      type="text"
-                      name="qualification"
-                      value={formData.qualification}
-                      onChange={onChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="e.g., Ph.D, M.Tech"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
-                      Specialization
-                    </label>
-                    <input
-                      type="text"
-                      name="specialization"
-                      value={formData.specialization}
-                      onChange={onChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="e.g., Data Science, AI"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
-                      Experience (Years)
-                    </label>
-                    <input
-                      type="number"
-                      name="experience"
-                      value={formData.experience}
-                      onChange={onChange}
-                      min="0"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
-                      Subjects Teaching (comma-separated)
-                    </label>
-                    <input
-                      type="text"
-                      name="subjects"
-                      value={formData.subjects}
-                      onChange={onChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="e.g., Mathematics, Physics, Chemistry"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
-                      Salary (Monthly)
-                    </label>
-                    <input
-                      type="number"
-                      name="salary"
-                      value={formData.salary}
-                      onChange={onChange}
-                      min="0"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="50000"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Emergency Contact */}
-              <div className="mb-6">
-                <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-b">
-                  Emergency Contact
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
-                      Contact Name
-                    </label>
-                    <input
-                      type="text"
-                      name="emergency_name"
-                      value={formData.emergencyContact.name}
-                      onChange={onChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter name"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
-                      Contact Phone
-                    </label>
-                    <input
-                      type="tel"
-                      name="emergency_phone"
-                      value={formData.emergencyContact.phone}
-                      onChange={onChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="+91 1234567890"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
-                      Relation
-                    </label>
-                    <input
-                      type="text"
-                      name="emergency_relation"
-                      value={formData.emergencyContact.relation}
-                      onChange={onChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="e.g., Spouse, Parent"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-blue-50 p-4 rounded-lg mb-6">
-                <p className="text-sm text-blue-800">
-                  <strong>Note:</strong> A faculty account will be automatically created with the email provided. 
-                  Default password will be the <strong>Employee ID</strong>.
-                </p>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-200 disabled:opacity-50"
-              >
-                {loading ? 'Adding Faculty...' : 'Add Faculty'}
-              </button>
-            </form>
-          </div>
-        </div>
+        </main>
       </div>
     </div>
   )

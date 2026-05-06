@@ -20,10 +20,30 @@ const protect = asyncHandler(async (req, res, next) => {
       // Get user from token
       req.user = await User.findById(decoded.id).select('-password')
 
+      // Bug fix: Guard against deleted user accounts with valid JWT
+      if (!req.user) {
+        res.status(401)
+        throw new Error('Not authorized, user not found')
+      }
+
+      // Bug fix: Block deactivated users from API access mid-session
+      if (!req.user.isActive) {
+        res.status(403)
+        throw new Error('Your account has been deactivated. Please contact admin.')
+      }
+
       next()
     } catch (error) {
-      res.status(401)
-      throw new Error('Not authorized, token failed')
+      // Only treat JWT errors as auth failures; re-throw everything else
+      if (
+        error.name === 'JsonWebTokenError' ||
+        error.name === 'TokenExpiredError' ||
+        error.name === 'NotBeforeError'
+      ) {
+        res.status(401)
+        throw new Error('Not authorized, token failed')
+      }
+      throw error
     }
   }
 
@@ -36,6 +56,10 @@ const protect = asyncHandler(async (req, res, next) => {
 // Role based access
 const authorize = (...roles) => {
   return (req, res, next) => {
+    if (!req.user) {
+      res.status(401)
+      throw new Error('Not authorized')
+    }
     if (!roles.includes(req.user.role)) {
       res.status(403)
       throw new Error(

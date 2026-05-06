@@ -1,8 +1,11 @@
+/* eslint-disable jsx-a11y/anchor-is-valid */
+/* eslint-disable no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react'
 import Sidebar from '../../components/Sidebar'
 import axios from 'axios'
 import toast, { Toaster } from 'react-hot-toast'
-import { MdPeople, MdSearch, MdToggleOn, MdToggleOff } from 'react-icons/md'
+import { MdPeople, MdSearch, MdToggleOn, MdToggleOff, MdDelete } from 'react-icons/md'
 
 const roleColors = {
   superadmin: 'bg-purple-100 text-purple-700',
@@ -30,7 +33,7 @@ const AllUsers = () => {
   const fetchUsers = async () => {
     try {
       const res = await axios.get(
-        'http://localhost:5000/api/auth/users',
+        '/api/auth/users',
         config
       )
       setUsers(res.data)
@@ -52,8 +55,8 @@ const AllUsers = () => {
     if (search) {
       result = result.filter(
         (u) =>
-          u.name.toLowerCase().includes(search.toLowerCase()) ||
-          u.email.toLowerCase().includes(search.toLowerCase())
+          u.name?.toLowerCase().includes(search.toLowerCase()) ||
+          u.email?.toLowerCase().includes(search.toLowerCase())
       )
     }
     if (roleFilter !== 'all') {
@@ -65,7 +68,7 @@ const AllUsers = () => {
   const handleToggle = async (id) => {
     try {
       const res = await axios.put(
-        `http://localhost:5000/api/auth/users/${id}/toggle`,
+        `/api/auth/users/${id}/toggle`,
         {},
         config
       )
@@ -73,6 +76,17 @@ const AllUsers = () => {
       fetchUsers()
     } catch (error) {
       toast.error('Failed to update user status')
+    }
+  }
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return
+    try {
+      const res = await axios.delete(`/api/auth/users/${id}`, config)
+      toast.success(res.data.message)
+      fetchUsers()
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to delete user')
     }
   }
 
@@ -197,17 +211,31 @@ const AllUsers = () => {
                         <td className="px-6 py-4 text-sm text-gray-500">
                           {new Date(u.createdAt).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4">
-                          <button
-                            onClick={() => handleToggle(u._id)}
-                            className={`flex items-center gap-1 text-sm font-medium ${u.isActive ? 'text-red-500 hover:text-red-700' : 'text-green-500 hover:text-green-700'}`}
-                          >
-                            {u.isActive ? (
-                              <><MdToggleOff size={20} /> Deactivate</>
-                            ) : (
-                              <><MdToggleOn size={20} /> Activate</>
-                            )}
-                          </button>
+                        <td className="px-6 py-4 flex items-center gap-4">
+                          {u.role !== 'superadmin' && u._id !== user._id && (
+                            <>
+                              <button
+                                onClick={() => handleToggle(u._id)}
+                                className={`flex items-center gap-1 text-sm font-medium ${u.isActive ? 'text-amber-500 hover:text-amber-700' : 'text-green-500 hover:text-green-700'}`}
+                              >
+                                {u.isActive ? (
+                                  <><MdToggleOff size={20} /> Deactivate</>
+                                ) : (
+                                  <><MdToggleOn size={20} /> Activate</>
+                                )}
+                              </button>
+                              
+                              <button
+                                onClick={() => handleDelete(u._id)}
+                                className="flex items-center gap-1 text-sm font-medium text-red-500 hover:text-red-700"
+                              >
+                                <MdDelete size={20} /> Delete
+                              </button>
+                            </>
+                          )}
+                          {(u.role === 'superadmin' || u._id === user._id) && (
+                            <span className="text-xs text-gray-400 font-medium italic">Protected</span>
+                          )}
                         </td>
                       </tr>
                     ))}

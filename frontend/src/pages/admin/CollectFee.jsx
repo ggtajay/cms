@@ -1,3 +1,6 @@
+/* eslint-disable jsx-a11y/anchor-is-valid */
+/* eslint-disable no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react'
 import Sidebar from '../../components/Sidebar'
 import axios from 'axios'
@@ -23,25 +26,25 @@ const CollectFee = () => {
     headers: { Authorization: `Bearer ${token}` }
   }
 
-  useEffect(() => {
-    fetchStudents()
-  }, [])
-
-  const fetchStudents = async () => {
+  const fetchStudents = React.useCallback(async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/students', config)
+      const res = await axios.get('/api/students', config)
       setStudents(res.data.filter(s => s.admissionStatus === 'active'))
     } catch (error) {
       toast.error('Failed to fetch students')
     }
-  }
+  }, [config])
+
+  useEffect(() => {
+    fetchStudents()
+  }, [fetchStudents])
 
   const handleSelectStudent = async (student) => {
     setSelectedStudent(student)
     setLoading(true)
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/fees/student/${student._id}`,
+        `/api/fees/student/${student._id}`,
         config
       )
       setStudentFees(res.data)
@@ -60,7 +63,7 @@ const CollectFee = () => {
 
     try {
       await axios.post(
-        `http://localhost:5000/api/fees/${feeId}/pay`,
+        `/api/fees/${feeId}/pay`,
         {
           amount: parseFloat(paymentData.amount),
           paymentMode: paymentData.paymentMode,

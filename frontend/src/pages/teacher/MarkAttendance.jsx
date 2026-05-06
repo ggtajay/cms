@@ -2,54 +2,79 @@ import React, { useState, useEffect } from 'react'
 import Sidebar from '../../components/Sidebar'
 import axios from 'axios'
 import toast, { Toaster } from 'react-hot-toast'
-import { MdCalendarToday, MdCheckCircle, MdCancel, MdAccessTime } from 'react-icons/md'
+import {
+  MdCalendarToday,
+  MdCheckCircle,
+  MdCancel,
+  MdAccessTime,
+  MdPeople,
+  MdRefresh,
+} from 'react-icons/md'
+
+const StatusBtn = ({ active, color, onClick, label }) => {
+  const variants = {
+    present: active
+      ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-200'
+      : 'bg-slate-100 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600',
+    absent: active
+      ? 'bg-red-500 text-white shadow-sm shadow-red-200'
+      : 'bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-600',
+    late: active
+      ? 'bg-amber-500 text-white shadow-sm shadow-amber-200'
+      : 'bg-slate-100 text-slate-500 hover:bg-amber-50 hover:text-amber-600',
+  }
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 ${variants[color]}`}
+    >
+      {label}
+    </button>
+  )
+}
 
 const MarkAttendance = () => {
   const [students, setStudents] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [fetched, setFetched] = useState(false)
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     subject: '',
     course: '',
     semester: 1,
-    section: 'A'
+    section: 'A',
   })
   const [attendance, setAttendance] = useState({})
   const token = localStorage.getItem('token')
   const user = JSON.parse(localStorage.getItem('user'))
 
-  const config = {
-    headers: { Authorization: `Bearer ${token}` }
-  }
+  const config = { headers: { Authorization: `Bearer ${token}` } }
 
   const fetchStudents = async () => {
-    if (!formData.course || !formData.semester) return
-    
+    if (!formData.course || !formData.semester) {
+      toast.error('Please fill in course and semester first')
+      return
+    }
     setLoading(true)
+    setFetched(false)
     try {
-      const res = await axios.get(
-        'http://localhost:5000/api/students',
-        config
-      )
-      
-      // Filter by course, semester, section
+      const res = await axios.get('/api/students', config)
       const filtered = res.data.filter(
-        s => s.course === formData.course && 
-             s.semester === parseInt(formData.semester) &&
-             s.section === formData.section &&
-             s.admissionStatus === 'active'
+        (s) =>
+          s.course === formData.course &&
+          s.semester === parseInt(formData.semester) &&
+          s.section === formData.section &&
+          s.admissionStatus === 'active'
       )
-      
       setStudents(filtered)
-      
-      // Initialize all as present by default
-      const initialAttendance = {}
-      filtered.forEach(s => {
-        initialAttendance[s._id] = 'present'
-      })
-      setAttendance(initialAttendance)
-    } catch (error) {
+      const init = {}
+      filtered.forEach((s) => { init[s._id] = 'present' })
+      setAttendance(init)
+      setFetched(true)
+      if (filtered.length === 0) toast.error('No active students found for this class')
+    } catch {
       toast.error('Failed to fetch students')
     } finally {
       setLoading(false)
@@ -57,117 +82,116 @@ const MarkAttendance = () => {
   }
 
   useEffect(() => {
-    if (formData.course && formData.semester) {
-      fetchStudents()
-    }
+    // Refetch when course/semester/section change (only if already fetched once)
+    if (fetched) fetchStudents()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.course, formData.semester, formData.section])
 
-  const onChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
-  }
-
-  const toggleStatus = (studentId, status) => {
-    setAttendance({ ...attendance, [studentId]: status })
-  }
-
+  const onChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value })
+  const toggleStatus = (id, status) => setAttendance({ ...attendance, [id]: status })
   const markAllPresent = () => {
-    const allPresent = {}
-    students.forEach(s => {
-      allPresent[s._id] = 'present'
-    })
-    setAttendance(allPresent)
+    const all = {}
+    students.forEach((s) => { all[s._id] = 'present' })
+    setAttendance(all)
+    toast.success('All marked as Present')
+  }
+  const markAllAbsent = () => {
+    const all = {}
+    students.forEach((s) => { all[s._id] = 'absent' })
+    setAttendance(all)
+    toast('All marked as Absent', { icon: '⚠️' })
   }
 
   const onSubmit = async (e) => {
     e.preventDefault()
-    
-    if (!formData.subject) {
+    if (!formData.subject.trim()) {
       toast.error('Please enter subject name')
       return
     }
-
     if (students.length === 0) {
-      toast.error('No students found for this class')
+      toast.error('No students to submit attendance for')
       return
     }
-
     setSaving(true)
     try {
-      const attendanceData = {
-        date: formData.date,
-        subject: formData.subject,
-        course: formData.course,
-        semester: parseInt(formData.semester),
-        section: formData.section,
-        students: students.map(s => ({
-          studentId: s._id,
-          status: attendance[s._id]
-        }))
-      }
-
       await axios.post(
-        'http://localhost:5000/api/attendance/mark',
-        attendanceData,
+        '/api/attendance/mark',
+        {
+          date: formData.date,
+          subject: formData.subject,
+          course: formData.course,
+          semester: parseInt(formData.semester),
+          section: formData.section,
+          students: students.map((s) => ({ studentId: s._id, status: attendance[s._id] })),
+        },
         config
       )
-
-      toast.success('Attendance marked successfully!')
-      
-      // Reset form
+      toast.success('Attendance submitted successfully!')
       setFormData({
         date: new Date().toISOString().split('T')[0],
         subject: '',
         course: '',
         semester: 1,
-        section: 'A'
+        section: 'A',
       })
       setStudents([])
       setAttendance({})
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to mark attendance')
+      setFetched(false)
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to submit attendance')
     } finally {
       setSaving(false)
     }
   }
 
-  const presentCount = Object.values(attendance).filter(s => s === 'present').length
-  const absentCount = Object.values(attendance).filter(s => s === 'absent').length
-  const lateCount = Object.values(attendance).filter(s => s === 'late').length
+  const presentCount = Object.values(attendance).filter((s) => s === 'present').length
+  const absentCount = Object.values(attendance).filter((s) => s === 'absent').length
+  const lateCount = Object.values(attendance).filter((s) => s === 'late').length
+  const total = students.length
+  const pct = total > 0 ? Math.round((presentCount / total) * 100) : 0
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-slate-50">
       <Sidebar />
       <Toaster position="top-right" />
 
-      <div className="flex-1 flex flex-col">
-        {/* Top Navbar */}
-        <div className="bg-white shadow px-6 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold text-gray-800">Mark Attendance</h1>
-          <div className="flex items-center gap-3">
-            <div className="bg-blue-600 w-9 h-9 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold">
-                {user?.name?.charAt(0)}
-              </span>
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Header */}
+        <header className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center sticky top-0 z-10">
+          <div>
+            <h1 className="text-lg font-bold text-slate-800">Mark Attendance</h1>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </p>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center">
+              <span className="text-white font-bold text-sm">{user?.name?.charAt(0)}</span>
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-800">{user?.name}</p>
-              <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
+            <div className="hidden sm:block">
+              <p className="text-sm font-semibold text-slate-800">{user?.name}</p>
+              <p className="text-xs text-slate-400 capitalize">{user?.role}</p>
             </div>
           </div>
-        </div>
+        </header>
 
-        {/* Page Content */}
-        <div className="p-6">
+        <main className="flex-1 p-6">
           <form onSubmit={onSubmit}>
-            {/* Class Selection */}
-            <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <MdCalendarToday className="text-blue-600" />
-                Select Class Details
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            {/* Class Selection Card */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                  <MdCalendarToday size={20} className="text-blue-600" />
+                </div>
                 <div>
-                  <label className="block text-gray-700 text-sm font-medium mb-2">
+                  <h2 className="text-base font-bold text-slate-800">Class Details</h2>
+                  <p className="text-xs text-slate-400">Select class info to load students</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
                     Date *
                   </label>
                   <input
@@ -176,12 +200,11 @@ const MarkAttendance = () => {
                     value={formData.date}
                     onChange={onChange}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-gray-700 text-sm font-medium mb-2">
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
                     Course *
                   </label>
                   <input
@@ -190,31 +213,27 @@ const MarkAttendance = () => {
                     value={formData.course}
                     onChange={onChange}
                     required
-                    placeholder="e.g., B.Tech, BCA"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g. BTech, BCA"
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-gray-700 text-sm font-medium mb-2">
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
                     Semester *
                   </label>
                   <select
                     name="semester"
                     value={formData.semester}
                     onChange={onChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   >
                     {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
-                      <option key={sem} value={sem}>
-                        Sem {sem}
-                      </option>
+                      <option key={sem} value={sem}>Semester {sem}</option>
                     ))}
                   </select>
                 </div>
-
                 <div>
-                  <label className="block text-gray-700 text-sm font-medium mb-2">
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
                     Section *
                   </label>
                   <input
@@ -223,12 +242,11 @@ const MarkAttendance = () => {
                     value={formData.section}
                     onChange={onChange}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-gray-700 text-sm font-medium mb-2">
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
                     Subject *
                   </label>
                   <input
@@ -237,152 +255,200 @@ const MarkAttendance = () => {
                     value={formData.subject}
                     onChange={onChange}
                     required
-                    placeholder="e.g., Mathematics"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g. Mathematics"
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
               </div>
+
+              <button
+                type="button"
+                onClick={fetchStudents}
+                disabled={loading}
+                className="mt-4 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors duration-200"
+              >
+                {loading ? (
+                  <>
+                    <MdRefresh size={18} className="animate-spin" /> Loading Students…
+                  </>
+                ) : (
+                  <>
+                    <MdPeople size={18} /> Load Students
+                  </>
+                )}
+              </button>
             </div>
 
+            {/* Loading skeleton */}
+            {loading && (
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                <div className="space-y-3">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-14 bg-slate-100 rounded-xl animate-pulse" />
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Students List */}
-            {students.length > 0 && (
+            {!loading && students.length > 0 && (
               <>
-                {/* Stats */}
-                <div className="grid grid-cols-3 gap-4 mb-6">
-                  <div className="bg-white rounded-xl p-4 shadow-sm flex items-center gap-3">
-                    <MdCheckCircle size={32} className="text-green-600" />
-                    <div>
-                      <p className="text-2xl font-bold text-green-600">{presentCount}</p>
-                      <p className="text-sm text-gray-500">Present</p>
+                {/* Live Stats Bar */}
+                <div className="grid grid-cols-4 gap-3 mb-4">
+                  {[
+                    { label: 'Total', value: total, icon: <MdPeople size={18} />, style: 'bg-slate-700 text-white' },
+                    { label: 'Present', value: presentCount, icon: <MdCheckCircle size={18} />, style: 'bg-emerald-500 text-white' },
+                    { label: 'Absent', value: absentCount, icon: <MdCancel size={18} />, style: 'bg-red-500 text-white' },
+                    { label: 'Late', value: lateCount, icon: <MdAccessTime size={18} />, style: 'bg-amber-500 text-white' },
+                  ].map((s) => (
+                    <div key={s.label} className={`${s.style} rounded-xl p-3 flex items-center gap-2 shadow-sm`}>
+                      {s.icon}
+                      <div>
+                        <p className="text-lg font-bold leading-none">{s.value}</p>
+                        <p className="text-xs opacity-80">{s.label}</p>
+                      </div>
                     </div>
+                  ))}
+                </div>
+
+                {/* Progress Bar */}
+                <div className="bg-white rounded-xl border border-slate-100 p-4 mb-4">
+                  <div className="flex justify-between text-xs text-slate-500 mb-1.5">
+                    <span>Attendance Rate</span>
+                    <span className="font-bold text-slate-700">{pct}%</span>
                   </div>
-                  <div className="bg-white rounded-xl p-4 shadow-sm flex items-center gap-3">
-                    <MdCancel size={32} className="text-red-600" />
-                    <div>
-                      <p className="text-2xl font-bold text-red-600">{absentCount}</p>
-                      <p className="text-sm text-gray-500">Absent</p>
-                    </div>
-                  </div>
-                  <div className="bg-white rounded-xl p-4 shadow-sm flex items-center gap-3">
-                    <MdAccessTime size={32} className="text-orange-600" />
-                    <div>
-                      <p className="text-2xl font-bold text-orange-600">{lateCount}</p>
-                      <p className="text-sm text-gray-500">Late</p>
-                    </div>
+                  <div className="w-full bg-slate-100 rounded-full h-2">
+                    <div
+                      className="bg-emerald-500 h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${pct}%` }}
+                    />
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                  <div className="p-4 border-b flex items-center justify-between">
-                    <h3 className="font-bold text-gray-800">
-                      Students ({students.length})
+                {/* Table */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                  <div className="px-5 py-3.5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                    <h3 className="font-bold text-slate-800 text-sm">
+                      Students — {formData.course} Sem {formData.semester}, Section {formData.section}
                     </h3>
-                    <button
-                      type="button"
-                      onClick={markAllPresent}
-                      className="text-sm bg-green-100 text-green-700 px-4 py-2 rounded-lg hover:bg-green-200 transition"
-                    >
-                      Mark All Present
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={markAllPresent}
+                        className="text-xs bg-emerald-100 text-emerald-700 font-semibold px-3 py-1.5 rounded-lg hover:bg-emerald-200 transition"
+                      >
+                        All Present
+                      </button>
+                      <button
+                        type="button"
+                        onClick={markAllAbsent}
+                        className="text-xs bg-red-50 text-red-600 font-semibold px-3 py-1.5 rounded-lg hover:bg-red-100 transition"
+                      >
+                        All Absent
+                      </button>
+                    </div>
                   </div>
 
                   <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">#</th>
-                          <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Student</th>
-                          <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Roll No</th>
-                          <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
+                          <th className="text-left px-5 py-3 font-semibold w-10">#</th>
+                          <th className="text-left px-5 py-3 font-semibold">Student</th>
+                          <th className="text-left px-5 py-3 font-semibold">Roll No.</th>
+                          <th className="text-center px-5 py-3 font-semibold">Status</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {students.map((student, index) => (
-                          <tr key={student._id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 text-sm text-gray-500">
-                              {index + 1}
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-3">
-                                <div className="bg-blue-600 w-10 h-10 rounded-full flex items-center justify-center">
-                                  <span className="text-white text-sm font-bold">
-                                    {student.name.charAt(0)}
-                                  </span>
+                      <tbody className="divide-y divide-slate-50">
+                        {students.map((student, idx) => {
+                          const status = attendance[student._id]
+                          const rowBg =
+                            status === 'absent'
+                              ? 'bg-red-50/40'
+                              : status === 'late'
+                              ? 'bg-amber-50/40'
+                              : 'hover:bg-slate-50'
+                          return (
+                            <tr key={student._id} className={`transition-colors ${rowBg}`}>
+                              <td className="px-5 py-3.5 text-slate-400">{idx + 1}</td>
+                              <td className="px-5 py-3.5">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-violet-400 flex items-center justify-center flex-shrink-0">
+                                    <span className="text-white text-xs font-bold">
+                                      {student.name.charAt(0)}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <p className="font-semibold text-slate-800 leading-tight">{student.name}</p>
+                                    <p className="text-xs text-slate-400">{student.email}</p>
+                                  </div>
                                 </div>
-                                <div>
-                                  <p className="text-sm font-medium text-gray-800">
-                                    {student.name}
-                                  </p>
-                                  <p className="text-xs text-gray-500">{student.email}</p>
+                              </td>
+                              <td className="px-5 py-3.5">
+                                <span className="font-mono text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md">
+                                  {student.rollNumber}
+                                </span>
+                              </td>
+                              <td className="px-5 py-3.5">
+                                <div className="flex items-center justify-center gap-1.5">
+                                  <StatusBtn
+                                    active={status === 'present'}
+                                    color="present"
+                                    onClick={() => toggleStatus(student._id, 'present')}
+                                    label="Present"
+                                  />
+                                  <StatusBtn
+                                    active={status === 'absent'}
+                                    color="absent"
+                                    onClick={() => toggleStatus(student._id, 'absent')}
+                                    label="Absent"
+                                  />
+                                  <StatusBtn
+                                    active={status === 'late'}
+                                    color="late"
+                                    onClick={() => toggleStatus(student._id, 'late')}
+                                    label="Late"
+                                  />
                                 </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 text-sm font-medium text-gray-600">
-                              {student.rollNumber}
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="flex items-center justify-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => toggleStatus(student._id, 'present')}
-                                  className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                                    attendance[student._id] === 'present'
-                                      ? 'bg-green-600 text-white'
-                                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                  }`}
-                                >
-                                  Present
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => toggleStatus(student._id, 'absent')}
-                                  className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                                    attendance[student._id] === 'absent'
-                                      ? 'bg-red-600 text-white'
-                                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                  }`}
-                                >
-                                  Absent
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => toggleStatus(student._id, 'late')}
-                                  className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                                    attendance[student._id] === 'late'
-                                      ? 'bg-orange-600 text-white'
-                                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                  }`}
-                                >
-                                  Late
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
+                              </td>
+                            </tr>
+                          )
+                        })}
                       </tbody>
                     </table>
                   </div>
 
-                  <div className="p-6 border-t">
+                  <div className="p-5 border-t border-slate-100">
                     <button
                       type="submit"
                       disabled={saving}
-                      className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-200 disabled:opacity-50"
+                      className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-semibold py-3 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2"
                     >
-                      {saving ? 'Saving Attendance...' : 'Submit Attendance'}
+                      {saving ? (
+                        <><MdRefresh size={18} className="animate-spin" /> Submitting…</>
+                      ) : (
+                        <><MdCheckCircle size={18} /> Submit Attendance ({total} students)</>
+                      )}
                     </button>
                   </div>
                 </div>
               </>
             )}
 
-            {!loading && students.length === 0 && formData.course && formData.subject && (
-              <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-                <p className="text-gray-400">No students found for this class</p>
+            {/* Empty state */}
+            {!loading && fetched && students.length === 0 && (
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-12 text-center">
+                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <MdPeople size={28} className="text-slate-300" />
+                </div>
+                <p className="text-slate-600 font-medium">No active students found</p>
+                <p className="text-sm text-slate-400 mt-1">
+                  Try a different course, semester, or section combination
+                </p>
               </div>
             )}
           </form>
-        </div>
+        </main>
       </div>
     </div>
   )

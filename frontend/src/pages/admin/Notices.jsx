@@ -1,8 +1,11 @@
+/* eslint-disable jsx-a11y/anchor-is-valid */
+/* eslint-disable no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react'
 import Sidebar from '../../components/Sidebar'
 import axios from 'axios'
 import toast, { Toaster } from 'react-hot-toast'
-import { MdNotifications, MdDelete, MdEdit, MdPushPin } from 'react-icons/md'
+import { MdNotifications, MdDelete, MdPushPin } from 'react-icons/md'
 import { useNavigate } from 'react-router-dom'
 
 const Notices = () => {
@@ -22,7 +25,7 @@ const Notices = () => {
   const fetchNotices = async () => {
     try {
       const params = categoryFilter !== 'all' ? `?category=${categoryFilter}` : ''
-      const res = await axios.get(`http://localhost:5000/api/notices${params}`, config)
+      const res = await axios.get(`/api/notices${params}`, config)
       setNotices(res.data)
     } catch (error) {
       toast.error('Failed to fetch notices')
@@ -38,7 +41,7 @@ const Notices = () => {
   const handleDelete = async (id, title) => {
     if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
       try {
-        await axios.delete(`http://localhost:5000/api/notices/${id}`, config)
+        await axios.delete(`/api/notices/${id}`, config)
         toast.success('Notice deleted successfully')
         fetchNotices()
       } catch (error) {

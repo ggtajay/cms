@@ -8,14 +8,13 @@ const CreateAdmin = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    password: '',
     role: 'admin'
   })
   const [loading, setLoading] = useState(false)
   const user = JSON.parse(localStorage.getItem('user'))
   const token = localStorage.getItem('token')
 
-  const { name, email, password, role } = formData
+  const { name, email, role } = formData
 
   const onChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -36,7 +35,7 @@ const CreateAdmin = () => {
         config
       )
       toast.success(res.data.message)
-      setFormData({ name: '', email: '', password: '', role: 'admin' })
+      setFormData({ name: '', email: '', role: 'admin' })
     } catch (error) {
       toast.error(
         error.response?.data?.message || 'Something went wrong'
@@ -120,21 +119,7 @@ const CreateAdmin = () => {
                 />
               </div>
 
-              {/* Password */}
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-medium mb-2">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  name="password"
-                  value={password}
-                  onChange={onChange}
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter password"
-                />
-              </div>
+              
 
               {/* Role */}
               <div className="mb-6">

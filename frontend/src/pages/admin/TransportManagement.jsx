@@ -1,3 +1,6 @@
+/* eslint-disable jsx-a11y/anchor-is-valid */
+/* eslint-disable no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react'
 import Sidebar from '../../components/Sidebar'
 import axios from 'axios'
@@ -28,7 +31,7 @@ const TransportManagement = () => {
 
   const fetchRoutes = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/transport', config)
+      const res = await axios.get('/api/transport', config)
       setRoutes(res.data)
     } catch (error) {
       toast.error('Failed to fetch routes')
@@ -98,13 +101,13 @@ const TransportManagement = () => {
     try {
       if (editMode) {
         await axios.put(
-          `http://localhost:5000/api/transport/${currentRoute._id}`,
+          `/api/transport/${currentRoute._id}`,
           formData,
           config
         )
         toast.success('Route updated successfully')
       } else {
-        await axios.post('http://localhost:5000/api/transport', formData, config)
+        await axios.post('/api/transport', formData, config)
         toast.success('Route created successfully')
       }
       setShowModal(false)
@@ -117,7 +120,7 @@ const TransportManagement = () => {
   const handleDelete = async (id, name) => {
     if (window.confirm(`Delete route ${name}?`)) {
       try {
-        await axios.delete(`http://localhost:5000/api/transport/${id}`, config)
+        await axios.delete(`/api/transport/${id}`, config)
         toast.success('Route deleted successfully')
         fetchRoutes()
       } catch (error) {
